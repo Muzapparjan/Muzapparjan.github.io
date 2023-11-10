@@ -1,0 +1,5432 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Intel64 and IA32 Instruction Encoding</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="intel64-and-ia32-instruction-encoding">Intel64 and IA32 Instruction Encoding</h1>
+<h2 id="preface">Preface</h2>
+<ul>
+<li>Date: 07/11/2023</li>
+<li>Reference: Intel® 64 and IA-32 Architectures Software Developer’s Manual Combined Volumes - Volume 2 - Chapter 2 Instruction Format</li>
+<li>Link: <a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel® 64 and IA-32 Architectures Software Developer Manuals</a></li>
+</ul>
+<h2 id="overview">Overview</h2>
+<p>The Intel 64 and IA-32 architectures instruction encodings are subsets of the format shown in below.</p>
+<table>
+<thead>
+<tr>
+<th>Prefixes</th>
+<th>Opcode</th>
+<th>ModR/M</th>
+<th>SIB</th>
+<th>Displacement</th>
+<th>Immediate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prefixes of 1 byte each(optional)</td>
+<td>Opcode of 1/2/3 bytes</td>
+<td>1 byte(if required)</td>
+<td>1 byte(if required)</td>
+<td>Address displacement of 1/2/4 bytes or none</td>
+<td>Immediate data of 1/2/4 bytes or none</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>[7-6]</th>
+<th>[5-3]</th>
+<th>[2-0]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mod</td>
+<td>Reg/Opcode</td>
+<td>R/M</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>[7-6]</th>
+<th>[5-3]</th>
+<th>[2-0]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scale</td>
+<td>Index</td>
+<td>Base</td>
+</tr>
+</tbody>
+</table>
+<p>Instructions consist of optional instruction prefixes (in any order), primary opcode bytes (up to three bytes), an addressing-form specifier (if required)consisting of the ModR/M byte and sometimes the SIB (Scale-Index-Base) byte, a displacement (if required), and an immediate data field (if required).</p>
+<h2 id="prefixes">Prefixes</h2>
+<p>Instruction prefixes are divided into four groups, each with a set of allowable prefix codes. For each instruction, it is only useful to include up to one prefix code from each of the four groups (Groups 1, 2, 3, 4). Groups 1 through 4 may be placed in any order relative to each other.</p>
+<ul>
+<li>Group 1
+<ul>
+<li>Lock and repeat prefixes:
+<ul>
+<li><strong>LOCK</strong> prefix is encoded using <strong>F0H</strong>.</li>
+<li><strong>REPNE/REPNZ</strong> prefix is encoded using <strong>F2H</strong>. Repeat-Not-Zero prefix applies only to string and input/output instructions. (F2H is also used as a mandatory prefix for some instructions.)</li>
+<li><strong>REP</strong> or <strong>REPE/REPZ</strong> is encoded using <strong>F3H</strong>. The repeat prefix applies only to string and input/output instructions. (F3H is also used as a mandatory prefix for some instructions.)</li>
+</ul>
+</li>
+<li><strong>BND</strong> prefix is encoded using <strong>F2H</strong> if the following conditions are true:
+<ul>
+<li>CPUID.(EAX=07H, ECX=0):EBX.MPX[bit 14] is set.</li>
+<li>BNDCFGU.EN and/or IA32_BNDCFGS.EN is set.</li>
+<li>When the F2 prefix precedes a near CALL, a near RET, a near JMP, a short Jcc, or a near Jcc instruction (see Appendix E, “Intel® Memory Protection Extensions,” of the Intel® 64 and IA-32 Architectures Software Developer’s Manual, Volume 1).</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Group 2
+<ul>
+<li>Segment override prefixes:
+<ul>
+<li><strong>2EH—CS</strong> segment override (use with any branch instruction is reserved).</li>
+<li><strong>36H—SS</strong> segment override prefix (use with any branch instruction is reserved).</li>
+<li><strong>3EH—DS</strong> segment override prefix (use with any branch instruction is reserved).</li>
+<li><strong>26H—ES</strong> segment override prefix (use with any branch instruction is reserved).</li>
+<li><strong>64H—FS</strong> segment override prefix (use with any branch instruction is reserved).</li>
+<li><strong>65H—GS</strong> segment override prefix (use with any branch instruction is reserved).</li>
+</ul>
+</li>
+<li>Branch hints:
+<ul>
+<li><strong>2EH</strong>—Branch not taken (used only with Jcc instructions).</li>
+<li><strong>3EH</strong>—Branch taken (used only with Jcc instructions).</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Group 3
+<ul>
+<li><strong>Operand-size override</strong> prefix is encoded using <strong>66H</strong> (66H is also used as a mandatory prefix for some instructions).</li>
+</ul>
+</li>
+<li>Group 4
+<ul>
+<li><strong>67H</strong>—<strong>Address-size override</strong> prefix.</li>
+</ul>
+</li>
+</ul>
+<h2 id="opcodes">Opcodes</h2>
+<p>A primary opcode can be <strong>1, 2, or 3</strong> bytes in length. An <strong>additional 3-bit</strong> opcode field is sometimes encoded in the <strong>ModR/M</strong> byte. Smaller fields can be defined within the primary opcode. Such fields define the direction of operation, size of displacements, register encoding, condition codes, or sign extension. Encoding fields used by an opcode vary depending on the class of operation.</p>
+<p>Two-byte opcode formats for general-purpose and SIMD instructions consist of one of the following:</p>
+<ul>
+<li>An escape opcode byte <strong>0FH</strong> as the primary opcode and a second opcode byte.</li>
+<li>A mandatory prefix (<strong>66H, F2H, or F3H</strong>), an escape opcode byte, and a second opcode byte (same as previous bullet).</li>
+</ul>
+<h2 id="modrm-and-sib-bytes">ModR/M and SIB Bytes</h2>
+<p>Many instructions that refer to an operand in memory have an addressing-form specifier byte (called the ModR/M byte) following the primary opcode. The ModR/M byte contains three fields of information:</p>
+<ul>
+<li>The mod field combines with the r/m field to form <strong>32</strong> possible values: <strong>eight registers and 24 addressing modes</strong>.</li>
+<li>The reg/opcode field specifies either a register number or three more bits of opcode information. The purpose of the reg/opcode field is specified in the primary opcode.</li>
+</ul>
+<p>Certain encodings of the ModR/M byte require a second addressing byte (the SIB byte). The base-plus-index and scale-plus-index forms of 32-bit addressing require the SIB byte. The SIB byte includes the following fields:</p>
+<ul>
+<li>The scale field specifies the scale factor.</li>
+<li>The index field specifies the register number of the index register.</li>
+<li>The base field specifies the register number of the base register.</li>
+</ul>
+<h2 id="displacement-and-immediate-bytes">Displacement and Immediate Bytes</h2>
+<p>Some addressing forms include a displacement immediately following the ModR/M byte (or the SIB byte if one is present). If a displacement is required, it can be 1, 2, or 4 bytes.</p>
+<p>If an instruction specifies an immediate operand, the operand always follows any displacement bytes. An immediate operand can be 1, 2 or 4 bytes.</p>
+<h2 id="a-cat-passed-by-here">A Cat Passed by Here</h2>
+<pre><code>    /\_____/\
+   /  o   o  \
+  ( ==  ^  == )
+   )         (
+  (           )
+ ( (  )   (  ) )
+(__(__)___(__)__)
+</code></pre>
+<h2 id="ok-lets-go-one-step-deeper">OK LET'S GO ONE STEP DEEPER</h2>
+<h2 id="yet-another-preface">Yet Another Preface</h2>
+<ul>
+<li>Date: 08/11/2023</li>
+<li>Reference: Intel® 64 and IA-32 Architectures Software Developer’s Manual Combined Volumes - Volume 2 - Appendix B Instruction Formats and Encodings</li>
+<li>Link: <a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel® 64 and IA-32 Architectures Software Developer Manuals</a></li>
+</ul>
+<h2 id="overview-1">Overview</h2>
+<p>All Intel Architecture instructions are encoded using subsets of the general machine instruction format shown below. Each instruction consists of:</p>
+<ul>
+<li>an opcode</li>
+<li>a register and/or address mode specifier consisting of the ModR/M byte and sometimes the scale-index-base (SIB) byte (if required)</li>
+<li>a displacement and an immediate data field (if required)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Legacy Prefixes</th>
+<th>REX Prefixes</th>
+<th>Opcodes</th>
+<th>ModR/M</th>
+<th>SIB</th>
+<th>Displacement</th>
+<th>Immediate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Grp1/2/3/4</td>
+<td>optional</td>
+<td>1-,2-, or 3- bytes</td>
+<td>Mod-Reg-R/M</td>
+<td>Scale-Index-Base</td>
+<td>Address Displacement(1,2,4 bytes or none)</td>
+<td>Immediate Data(1,2,4 bytes or none)</td>
+</tr>
+</tbody>
+</table>
+<p>Note:</p>
+<ul>
+<li>The Reg Field may be used as an opcode extension field (TTT) and as a way to encode diagnostic registers (eee).</li>
+</ul>
+<h2 id="legacy-prefixes">Legacy Prefixes</h2>
+<p>The legacy prefixes include <strong>66H, 67H, F2H, and F3H</strong>. They are optional, except when <strong>F2H, F3H, and 66H</strong> are used in instruction extensions. Legacy prefixes must be placed before REX prefixes.</p>
+<h2 id="rex-prefixes">REX Prefixes</h2>
+<p>REX prefixes are a set of 16 opcodes that span one row of the opcode map and occupy <strong>entries 40H to 4FH</strong>. These opcodes represent valid instructions (<strong>INC or DEC</strong>) in IA-32 operating modes and in compatibility mode. In 64-bit mode, the same opcodes represent the instruction prefix REX and are <strong>not treated as individual instructions</strong>.</p>
+<h2 id="opcode-fields">Opcode Fields</h2>
+<p>The primary opcode for an instruction is encoded in one to three bytes of the instruction. Within the primary opcode, smaller encoding fields may be defined. These fields vary according to the class of operation being performed.</p>
+<p>Almost all instructions that refer to a register and/or memory operand have a register and/or address mode byte following the opcode. This byte, the ModR/M byte, consists of the mod field (2 bits), the reg field (3 bits; this field is sometimes an opcode extension), and the R/M field (3 bits). Certain encodings of the ModR/M byte indicate that a second address mode byte, the SIB byte, must be used.</p>
+<p>If the addressing mode specifies a displacement, the displacement value is placed immediately following the ModR/M byte or SIB byte. Possible sizes are 8, 16, or 32 bits. If the instruction specifies an immediate value, the immediate value follows any displacement bytes. The immediate, if specified, is always the last field of the instruction.</p>
+<h2 id="special-fields">Special Fields</h2>
+<p>Table below lists bit fields that appear in certain instructions, sometimes within the opcode bytes.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Field Name</th>
+<th style="text-align:left">Description</th>
+<th style="text-align:center">Number of Bits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">reg</td>
+<td style="text-align:left">General Register Specifier</td>
+<td style="text-align:center">3</td>
+</tr>
+<tr>
+<td style="text-align:center">w</td>
+<td style="text-align:left">Specifies if data is byte or full-sized, where full-sized is 16 or 32 bits</td>
+<td style="text-align:center">1</td>
+</tr>
+<tr>
+<td style="text-align:center">s</td>
+<td style="text-align:left">Specifies sign extension of an immediate field</td>
+<td style="text-align:center">1</td>
+</tr>
+<tr>
+<td style="text-align:center">sreg2</td>
+<td style="text-align:left">Segment register specifier for CS, SS, DS, ES</td>
+<td style="text-align:center">2</td>
+</tr>
+<tr>
+<td style="text-align:center">sreg3</td>
+<td style="text-align:left">Segment register specifier for CS, SS, DS, ES, FS, GS</td>
+<td style="text-align:center">3</td>
+</tr>
+<tr>
+<td style="text-align:center">eee</td>
+<td style="text-align:left">Specifies a special-purpose (control or debug) register</td>
+<td style="text-align:center">3</td>
+</tr>
+<tr>
+<td style="text-align:center">tttn</td>
+<td style="text-align:left">For conditional instructions, specifies a condition asserted or negated</td>
+<td style="text-align:center">4</td>
+</tr>
+<tr>
+<td style="text-align:center">d</td>
+<td style="text-align:left">Specifies direction of data operation</td>
+<td style="text-align:center">1</td>
+</tr>
+</tbody>
+</table>
+<h2 id="reg-field-reg-for-non-64-bit-modes">Reg Field (reg) for Non-64-Bit Modes</h2>
+<p>The reg field in the ModR/M byte specifies a general-purpose register operand. The group of registers specified is modified by the presence and state of the w bit in an encoding (refer to Section B.1.4.3). Tables below show the encoding of the reg field when the w bit is not present in an encoding, and the encoding of the reg field when the w bit is present.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">reg Field</th>
+<th style="text-align:center">Register Selected during 16-Bit Data Operations</th>
+<th style="text-align:center">Register Selected during 32-Bit Data Operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">000</td>
+<td style="text-align:center">AX</td>
+<td style="text-align:center">EAX</td>
+</tr>
+<tr>
+<td style="text-align:center">001</td>
+<td style="text-align:center">CX</td>
+<td style="text-align:center">ECX</td>
+</tr>
+<tr>
+<td style="text-align:center">010</td>
+<td style="text-align:center">DX</td>
+<td style="text-align:center">EDX</td>
+</tr>
+<tr>
+<td style="text-align:center">011</td>
+<td style="text-align:center">BX</td>
+<td style="text-align:center">EBX</td>
+</tr>
+<tr>
+<td style="text-align:center">100</td>
+<td style="text-align:center">SP</td>
+<td style="text-align:center">ESP</td>
+</tr>
+<tr>
+<td style="text-align:center">101</td>
+<td style="text-align:center">BP</td>
+<td style="text-align:center">EBP</td>
+</tr>
+<tr>
+<td style="text-align:center">110</td>
+<td style="text-align:center">SI</td>
+<td style="text-align:center">ESI</td>
+</tr>
+<tr>
+<td style="text-align:center">111</td>
+<td style="text-align:center">DI</td>
+<td style="text-align:center">EDI</td>
+</tr>
+</tbody>
+</table>
+<table style="text-align:center">
+    <tr>
+        <td colspan="3">Register Specified by reg Field During 16-Bit Data Operations</td>
+    </tr>
+    <tr>
+        <td rowspan="2">reg</td>
+        <td colspan="2">Function of w Field</td>
+    </tr>
+    <tr>
+        <td>When w = 0</td>
+        <td>When w = 1</td>
+    </tr>
+    <tr>
+        <td>000</td>
+        <td>AL</td>
+        <td>AX</td>
+    </tr>
+    <tr>
+        <td>001</td>
+        <td>CL</td>
+        <td>CX</td>
+    </tr>
+    <tr>
+        <td>010</td>
+        <td>DL</td>
+        <td>DX</td>
+    </tr>
+    <tr>
+        <td>011</td>
+        <td>BL</td>
+        <td>BX</td>
+    </tr>
+    <tr>
+        <td>100</td>
+        <td>AH</td>
+        <td>SP</td>
+    </tr>
+    <tr>
+        <td>101</td>
+        <td>CH</td>
+        <td>BP</td>
+    </tr>
+    <tr>
+        <td>110</td>
+        <td>DH</td>
+        <td>SI</td>
+    </tr>
+    <tr>
+        <td>111</td>
+        <td>BH</td>
+        <td>DI</td>
+    </tr>
+</table>
+<table style="text-align:center">
+    <tr>
+        <td colspan="3">Register Specified by reg Field During 32-Bit Data Operations</td>
+    </tr>
+    <tr>
+        <td rowspan="2">reg</td>
+        <td colspan="2">Function of w Field</td>
+    </tr>
+    <tr>
+        <td>When w = 0</td>
+        <td>When w = 1</td>
+    </tr>
+    <tr>
+        <td>000</td>
+        <td>AL</td>
+        <td>EAX</td>
+    </tr>
+    <tr>
+        <td>001</td>
+        <td>CL</td>
+        <td>ECX</td>
+    </tr>
+    <tr>
+        <td>010</td>
+        <td>DL</td>
+        <td>EDX</td>
+    </tr>
+    <tr>
+        <td>011</td>
+        <td>BL</td>
+        <td>EBX</td>
+    </tr>
+    <tr>
+        <td>100</td>
+        <td>AH</td>
+        <td>ESP</td>
+    </tr>
+    <tr>
+        <td>101</td>
+        <td>CH</td>
+        <td>EBP</td>
+    </tr>
+    <tr>
+        <td>110</td>
+        <td>DH</td>
+        <td>ESI</td>
+    </tr>
+    <tr>
+        <td>111</td>
+        <td>BH</td>
+        <td>EDI</td>
+    </tr>
+</table>
+<h2 id="reg-field-reg-for-64-bit-mode">Reg Field (reg) for 64-Bit Mode</h2>
+<p>Just like in non-64-bit modes, the reg field in the ModR/M byte specifies a general-purpose register operand. The group of registers specified is modified by the presence of and state of the w bit in an encoding (refer to Section
+B.1.4.3). Tables below show the encoding of the reg field when the w bit is not present in an encoding, and the encoding of the reg field when the w bit is present.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">reg Field</th>
+<th style="text-align:center">Register Selected during 16-Bit Data Operations</th>
+<th style="text-align:center">Register Selected during 32-Bit Data Operations</th>
+<th style="text-align:center">Register Selected during 64-Bit Data Operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">000</td>
+<td style="text-align:center">AX</td>
+<td style="text-align:center">EAX</td>
+<td style="text-align:center">RAX</td>
+</tr>
+<tr>
+<td style="text-align:center">001</td>
+<td style="text-align:center">CX</td>
+<td style="text-align:center">ECX</td>
+<td style="text-align:center">RCX</td>
+</tr>
+<tr>
+<td style="text-align:center">010</td>
+<td style="text-align:center">DX</td>
+<td style="text-align:center">EDX</td>
+<td style="text-align:center">RDX</td>
+</tr>
+<tr>
+<td style="text-align:center">011</td>
+<td style="text-align:center">BX</td>
+<td style="text-align:center">EBX</td>
+<td style="text-align:center">RBX</td>
+</tr>
+<tr>
+<td style="text-align:center">100</td>
+<td style="text-align:center">SP</td>
+<td style="text-align:center">ESP</td>
+<td style="text-align:center">RSP</td>
+</tr>
+<tr>
+<td style="text-align:center">101</td>
+<td style="text-align:center">BP</td>
+<td style="text-align:center">EBP</td>
+<td style="text-align:center">RBP</td>
+</tr>
+<tr>
+<td style="text-align:center">110</td>
+<td style="text-align:center">SI</td>
+<td style="text-align:center">ESI</td>
+<td style="text-align:center">RSI</td>
+</tr>
+<tr>
+<td style="text-align:center">111</td>
+<td style="text-align:center">DI</td>
+<td style="text-align:center">EDI</td>
+<td style="text-align:center">RDI</td>
+</tr>
+</tbody>
+</table>
+<table style="text-align:center">
+    <tr>
+        <td colspan="3">Register Specified by reg Field During 16-Bit Data Operations</td>
+    </tr>
+    <tr>
+        <td rowspan="2">reg</td>
+        <td colspan="2">Function of w Field</td>
+    </tr>
+    <tr>
+        <td>When w = 0</td>
+        <td>When w = 1</td>
+    </tr>
+    <tr>
+        <td>000</td>
+        <td>AL</td>
+        <td>AX</td>
+    </tr>
+    <tr>
+        <td>001</td>
+        <td>CL</td>
+        <td>CX</td>
+    </tr>
+    <tr>
+        <td>010</td>
+        <td>DL</td>
+        <td>DX</td>
+    </tr>
+    <tr>
+        <td>011</td>
+        <td>BL</td>
+        <td>BX</td>
+    </tr>
+    <tr>
+        <td>100</td>
+        <td>AH</td>
+        <td>SP</td>
+    </tr>
+    <tr>
+        <td>101</td>
+        <td>CH</td>
+        <td>BP</td>
+    </tr>
+    <tr>
+        <td>110</td>
+        <td>DH</td>
+        <td>SI</td>
+    </tr>
+    <tr>
+        <td>111</td>
+        <td>BH</td>
+        <td>DI</td>
+    </tr>
+</table>
+<table style="text-align:center">
+    <tr>
+        <td colspan="3">Register Specified by reg Field During 32-Bit Data Operations</td>
+    </tr>
+    <tr>
+        <td rowspan="2">reg</td>
+        <td colspan="2">Function of w Field</td>
+    </tr>
+    <tr>
+        <td>When w = 0</td>
+        <td>When w = 1</td>
+    </tr>
+    <tr>
+        <td>000</td>
+        <td>AL</td>
+        <td>EAX</td>
+    </tr>
+    <tr>
+        <td>001</td>
+        <td>CL</td>
+        <td>ECX</td>
+    </tr>
+    <tr>
+        <td>010</td>
+        <td>DL</td>
+        <td>EDX</td>
+    </tr>
+    <tr>
+        <td>011</td>
+        <td>BL</td>
+        <td>EBX</td>
+    </tr>
+    <tr>
+        <td>100</td>
+        <td>AH</td>
+        <td>ESP</td>
+    </tr>
+    <tr>
+        <td>101</td>
+        <td>CH</td>
+        <td>EBP</td>
+    </tr>
+    <tr>
+        <td>110</td>
+        <td>DH</td>
+        <td>ESI</td>
+    </tr>
+    <tr>
+        <td>111</td>
+        <td>BH</td>
+        <td>EDI</td>
+    </tr>
+</table>
+<p>Note:</p>
+<ul>
+<li>AH, CH, DH, BH <strong>can not be encoded when REX prefix is used</strong>. Such an expression defaults to the low byte.</li>
+</ul>
+<h2 id="encoding-of-operand-size-w-bit">Encoding of Operand Size (w) Bit</h2>
+<p>The current operand-size attribute determines whether the processor is performing 16-bit, 32-bit or 64-bit operations. Within the constraints of the current operand-size attribute, the operand-size bit (w) can be used to indicate operations on 8-bit operands or the full operand size specified with the operand-size attribute. Table below shows the encoding of the w bit depending on the current operand-size attribute.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">w Bit</th>
+<th style="text-align:center">Operand Size When Operand-Size Attribute is 16-Bits</th>
+<th style="text-align:center">Operand Size When Operand-Size Attribute is 32-Bits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:center">8 Bits</td>
+<td style="text-align:center">8 Bits</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">16 Bits</td>
+<td style="text-align:center">32 Bits</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sign-extend-s-bit">Sign-Extend (s) Bit</h2>
+<p>The sign-extend (s) bit occurs in instructions with immediate data fields that are being extended from 8 bits to 16 or 32 bits.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">s</th>
+<th style="text-align:center">Effect on 8-Bit Immediate Data</th>
+<th style="text-align:center">Effect ib 16- or 32-Bit Immediate Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:center">None</td>
+<td style="text-align:center">None</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">Sign-extend to fill 16-bit or 32-bit destination</td>
+<td style="text-align:center">None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="segment-register-sreg-field">Segment Register (sreg) Field</h2>
+<p>When an instruction operates on a segment register, the reg field in the ModR/M byte is called the sreg field and is used to specify the segment register. Table below shows the encoding of the sreg field. This field is sometimes a 2-bit field (sreg2) and other times a 3-bit field (sreg3).</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">2-Bit sreg2 Field</th>
+<th style="text-align:center">Segment Register Selected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">00</td>
+<td style="text-align:center">ES</td>
+</tr>
+<tr>
+<td style="text-align:center">01</td>
+<td style="text-align:center">CS</td>
+</tr>
+<tr>
+<td style="text-align:center">10</td>
+<td style="text-align:center">SS</td>
+</tr>
+<tr>
+<td style="text-align:center">11</td>
+<td style="text-align:center">DS</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">3-Bit sreg3 Field</th>
+<th style="text-align:center">Segment Register Selected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">000</td>
+<td style="text-align:center">ES</td>
+</tr>
+<tr>
+<td style="text-align:center">001</td>
+<td style="text-align:center">CS</td>
+</tr>
+<tr>
+<td style="text-align:center">010</td>
+<td style="text-align:center">SS</td>
+</tr>
+<tr>
+<td style="text-align:center">011</td>
+<td style="text-align:center">DS</td>
+</tr>
+<tr>
+<td style="text-align:center">100</td>
+<td style="text-align:center">FS</td>
+</tr>
+<tr>
+<td style="text-align:center">101</td>
+<td style="text-align:center">GS</td>
+</tr>
+<tr>
+<td style="text-align:center">110</td>
+<td style="text-align:center">Reserved</td>
+</tr>
+<tr>
+<td style="text-align:center">111</td>
+<td style="text-align:center">Reserved</td>
+</tr>
+</tbody>
+</table>
+<p>Note:</p>
+<ul>
+<li>Do not use reserved encodings.</li>
+</ul>
+<h2 id="special-purpose-register-eee-field">Special-Purpose Register (eee) Field</h2>
+<p>When control or debug registers are referenced in an instruction they are encoded in the eee field, located in bits 5 though 3 of the ModR/M byte (an alternate encoding of the sreg field).</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">eee</th>
+<th style="text-align:center">Control Register</th>
+<th style="text-align:center">Debug Register</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">000</td>
+<td style="text-align:center">CR0</td>
+<td style="text-align:center">DR0</td>
+</tr>
+<tr>
+<td style="text-align:center">001</td>
+<td style="text-align:center">Reserved</td>
+<td style="text-align:center">DR1</td>
+</tr>
+<tr>
+<td style="text-align:center">010</td>
+<td style="text-align:center">CR2</td>
+<td style="text-align:center">DR2</td>
+</tr>
+<tr>
+<td style="text-align:center">011</td>
+<td style="text-align:center">CR3</td>
+<td style="text-align:center">DR3</td>
+</tr>
+<tr>
+<td style="text-align:center">100</td>
+<td style="text-align:center">CR4</td>
+<td style="text-align:center">Reserved</td>
+</tr>
+<tr>
+<td style="text-align:center">101</td>
+<td style="text-align:center">Reserved</td>
+<td style="text-align:center">Reserved</td>
+</tr>
+<tr>
+<td style="text-align:center">110</td>
+<td style="text-align:center">Reserved</td>
+<td style="text-align:center">DR6</td>
+</tr>
+<tr>
+<td style="text-align:center">111</td>
+<td style="text-align:center">Reserved</td>
+<td style="text-align:center">DR7</td>
+</tr>
+</tbody>
+</table>
+<h2 id="condition-test-tttn-field">Condition Test (tttn) Field</h2>
+<p>For conditional instructions (such as conditional jumps and set on condition), the condition test field (tttn) is encoded for the condition being tested. The ttt part of the field gives the condition to test and the n part indicates whether to use the condition (n = 0) or its negation (n = 1).</p>
+<ul>
+<li>For 1-byte primary opcodes, the tttn field is located in bits 3, 2, 1, and 0 of the opcode byte.</li>
+<li>For 2-byte primary opcodes, the tttn field is located in bits 3, 2, 1, and 0 of the second opcode byte.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">tttn</th>
+<th style="text-align:left">Mnemonic</th>
+<th style="text-align:left">Condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0000</td>
+<td style="text-align:left">O</td>
+<td style="text-align:left">Overflow</td>
+</tr>
+<tr>
+<td style="text-align:center">0001</td>
+<td style="text-align:left">NO</td>
+<td style="text-align:left">No overflow</td>
+</tr>
+<tr>
+<td style="text-align:center">0010</td>
+<td style="text-align:left">B, NAE</td>
+<td style="text-align:left">Below, Not above or equal</td>
+</tr>
+<tr>
+<td style="text-align:center">0011</td>
+<td style="text-align:left">NB, AE</td>
+<td style="text-align:left">Not below, Above or equal</td>
+</tr>
+<tr>
+<td style="text-align:center">0100</td>
+<td style="text-align:left">E, Z</td>
+<td style="text-align:left">Equal, Zero</td>
+</tr>
+<tr>
+<td style="text-align:center">0101</td>
+<td style="text-align:left">NE, NZ</td>
+<td style="text-align:left">Not equal, Not zero</td>
+</tr>
+<tr>
+<td style="text-align:center">0110</td>
+<td style="text-align:left">BE, NA</td>
+<td style="text-align:left">Below or equal, Not above</td>
+</tr>
+<tr>
+<td style="text-align:center">0111</td>
+<td style="text-align:left">NBE, A</td>
+<td style="text-align:left">Not below or equal, Above</td>
+</tr>
+<tr>
+<td style="text-align:center">1000</td>
+<td style="text-align:left">S</td>
+<td style="text-align:left">Sign</td>
+</tr>
+<tr>
+<td style="text-align:center">1001</td>
+<td style="text-align:left">NS</td>
+<td style="text-align:left">Not sign</td>
+</tr>
+<tr>
+<td style="text-align:center">1010</td>
+<td style="text-align:left">P, PE</td>
+<td style="text-align:left">Parity, Parity even</td>
+</tr>
+<tr>
+<td style="text-align:center">1011</td>
+<td style="text-align:left">NP, PO</td>
+<td style="text-align:left">Not parity, Parity odd</td>
+</tr>
+<tr>
+<td style="text-align:center">1100</td>
+<td style="text-align:left">L, NGE</td>
+<td style="text-align:left">Less than, Not greater than or equal to</td>
+</tr>
+<tr>
+<td style="text-align:center">1101</td>
+<td style="text-align:left">NL, GE</td>
+<td style="text-align:left">Not less than, Greater than or equal to</td>
+</tr>
+<tr>
+<td style="text-align:center">1110</td>
+<td style="text-align:left">LE, NG</td>
+<td style="text-align:left">Less than or equal to, Not greater than</td>
+</tr>
+<tr>
+<td style="text-align:center">1111</td>
+<td style="text-align:left">NLE, G</td>
+<td style="text-align:left">Not less than or equal to, greater than</td>
+</tr>
+</tbody>
+</table>
+<h2 id="direction-d-bit">Direction (d) Bit</h2>
+<p>In many two-operand instructions, a direction bit (d) indicates which operand is considered the source and which is the destination.</p>
+<ul>
+<li>When used for integer instructions, the d bit is located at bit 1 of a 1-byte primary opcode.</li>
+<li>When used for floating-point instructions (in Table B-16), the d bit is shown as bit 2 of the first byte of the primary opcode.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">d</th>
+<th style="text-align:left">Source</th>
+<th style="text-align:left">Destination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:left">reg Field</td>
+<td style="text-align:left">ModR/M or SIB Field</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:left">ModR/M or SIB Field</td>
+<td style="text-align:left">reg Field</td>
+</tr>
+</tbody>
+</table>
+<h2 id="other-notes">Other Notes</h2>
+<p>Table below contains notes on particular encodings.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Symbol</th>
+<th style="text-align:left">Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">A</td>
+<td style="text-align:left">A value of 11B in bits 7 and 6 of the ModR/M byte is reserved.</td>
+</tr>
+<tr>
+<td style="text-align:center">B</td>
+<td style="text-align:left">A value of 01B (or 10B) in bits 7 and 6 of the ModR/M byte is reserved.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="a-cat-passed-by-here-again">A Cat Passed by Here AGAIN</h2>
+<pre><code>    /\_____/\
+   /  o   o  \
+  ( ==  ^  == )
+   )         (
+  (           )
+ ( (  )   (  ) )
+(__(__)___(__)__)
+</code></pre>
+<h2 id="ok-lets-go-one-step-deeeeeeeeeper">OK LET'S GO ONE STEP DEEEEEEEEEPER</h2>
+<h2 id="the-last-preface">The Last Preface</h2>
+<ul>
+<li>Date: 09/11/2023</li>
+<li>Reference: Intel® 64 and IA-32 Architectures Software Developer’s Manual Combined Volumes - Volume 2 - Appendix B Instruction Formats and Encodings</li>
+<li>Link: <a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel® 64 and IA-32 Architectures Software Developer Manuals</a></li>
+</ul>
+<h2 id="general-purpose-instruction-formats-and-encodings-for-non-64-bit-modes">GENERAL-PURPOSE INSTRUCTION FORMATS AND ENCODINGS FOR NON-64-BIT MODES</h2>
+<p>Table below shows machine instruction formats and encodings for general purpose instructions in non-64-bit modes.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Instruction and Format</th>
+<th style="text-align:left">Encoding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>AAA – ASCII Adjust after Addition</strong></td>
+<td style="text-align:left">0011 0111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>AAD – ASCII Adjust AX before Division</strong></td>
+<td style="text-align:left">1101 0101 : 0000 1010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>AAM – ASCII Adjust AX after Multiply</strong></td>
+<td style="text-align:left">1101 0100 : 0000 1010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>AAS – ASCII Adjust AL after Subtraction</strong></td>
+<td style="text-align:left">0011 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ADC – ADD with Carry</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0001 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0001 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0001 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0001 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 010 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0001 010w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 010 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ADD – Add</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0000 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0000 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0000 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0000 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 000 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0000 010w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 000 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>AND – Logical AND</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0010 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0010 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0010 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0010 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 100 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0010 010w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 100 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ARPL – Adjust RPL Field of Selector</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0110 0011 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0110 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BOUND – Check Array Against Bounds</strong></td>
+<td style="text-align:left">0110 0010 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSF – Bit Scan Forward</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1011 1100 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0000 1111 : 1011 1100 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSR – Bit Scan Reverse</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1011 1101 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0000 1111 : 1011 1101 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSWAP – Byte Swap</strong></td>
+<td style="text-align:left">0000 1111 : 1100 1 reg</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BT – Bit Test</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : 11 100 reg: imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : mod 100 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1010 0011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, reg</td>
+<td style="text-align:left">0000 1111 : 1010 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BTC – Bit Test and Complement</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : 11 111 reg: imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : mod 111 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1011 1011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, reg</td>
+<td style="text-align:left">0000 1111 : 1011 1011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BTR – Bit Test and Reset</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : 11 110 reg: imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : mod 110 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1011 0011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, reg</td>
+<td style="text-align:left">0000 1111 : 1011 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BTS – Bit Test and Set</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : 11 101 reg: imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0000 1111 : 1011 1010 : mod 101 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1010 1011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, reg</td>
+<td style="text-align:left">0000 1111 : 1010 1011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CALL – Call Procedure (in same segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">direct</td>
+<td style="text-align:left">1110 1000 : full displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">register indirect</td>
+<td style="text-align:left">1111 1111 : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory indirect</td>
+<td style="text-align:left">1111 1111 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CALL – Call Procedure (in other segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">direct</td>
+<td style="text-align:left">1001 1010 : unsigned full offset, selector</td>
+</tr>
+<tr>
+<td style="text-align:left">indirect</td>
+<td style="text-align:left">1111 1111 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CBW – Convert Byte to Word</strong></td>
+<td style="text-align:left">1001 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CDQ – Convert Doubleword to Qword</strong></td>
+<td style="text-align:left">1001 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLC – Clear Carry Flag</strong></td>
+<td style="text-align:left">1111 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLD – Clear Direction Flag</strong></td>
+<td style="text-align:left">1111 1100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLI – Clear Interrupt Flag</strong></td>
+<td style="text-align:left">1111 1010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLTS – Clear Task-Switched Flag in CR0</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0110</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMC – Complement Carry Flag</strong></td>
+<td style="text-align:left">1111 0101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMP – Compare Two Operands</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with register2</td>
+<td style="text-align:left">0011 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 with register1</td>
+<td style="text-align:left">0011 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory with register</td>
+<td style="text-align:left">0011 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register with memory</td>
+<td style="text-align:left">0011 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate with register</td>
+<td style="text-align:left">1000 00sw : 11 111 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate with AL, AX, or EAX</td>
+<td style="text-align:left">0011 110w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate with memory</td>
+<td style="text-align:left">1000 00sw : mod 111 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMPS/CMPSB/CMPSW/CMPSD – Compare String Operands</strong></td>
+<td style="text-align:left">1010 011w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMPXCHG – Compare and Exchange</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1011 000w : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0000 1111 : 1011 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CPUID – CPU Identification</strong></td>
+<td style="text-align:left">0000 1111 : 1010 0010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CWD – Convert Word to Doubleword</strong></td>
+<td style="text-align:left">1001 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CWDE – Convert Word to Doubleword</strong></td>
+<td style="text-align:left">1001 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DAA – Decimal Adjust AL after Addition</strong></td>
+<td style="text-align:left">0010 0111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DAS – Decimal Adjust AL after Subtraction</strong></td>
+<td style="text-align:left">0010 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DEC – Decrement by 1</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">1111 111w : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register (alternate encoding)</td>
+<td style="text-align:left">0100 1 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">1111 111w : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DIV – Unsigned Divide</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by register</td>
+<td style="text-align:left">1111 011w : 11 110 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by memory</td>
+<td style="text-align:left">1111 011w : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">HLT – Halt</td>
+<td style="text-align:left">1111 0100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IDIV – Signed Divide</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by register</td>
+<td style="text-align:left">1111 011w : 11 111 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by memory</td>
+<td style="text-align:left">1111 011w : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IMUL – Signed Multiply</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with register</td>
+<td style="text-align:left">1111 011w : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with memory</td>
+<td style="text-align:left">1111 011w : mod 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with register2</td>
+<td style="text-align:left">0000 1111 : 1010 1111 : 11 : reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register with memory</td>
+<td style="text-align:left">0000 1111 : 1010 1111 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with immediate to register2</td>
+<td style="text-align:left">0110 10s1 : 11 reg1 reg2 : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory with immediate to register</td>
+<td style="text-align:left">0110 10s1 : mod reg r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IN – Input From Port</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">fixed port</td>
+<td style="text-align:left">1110 010w : port number</td>
+</tr>
+<tr>
+<td style="text-align:left">variable port</td>
+<td style="text-align:left">1110 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INC – Increment by 1</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">reg</td>
+<td style="text-align:left">1111 111w : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">reg (alternate encoding)</td>
+<td style="text-align:left">0100 0 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">1111 111w : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INS – Input from DX Port</strong></td>
+<td style="text-align:left">0110 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INT n – Interrupt Type n</strong></td>
+<td style="text-align:left">1100 1101 : type</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INT – Single-Step Interrupt 3</strong></td>
+<td style="text-align:left">1100 1100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INTO – Interrupt 4 on Overflow</strong></td>
+<td style="text-align:left">1100 1110</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INVD – Invalidate Cache</strong></td>
+<td style="text-align:left">0000 1111 : 0000 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INVLPG – Invalidate TLB Entry</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INVPCID – Invalidate Process-Context Identifier</strong></td>
+<td style="text-align:left">0110 0110:0000 1111:0011 1000:1000 0010: mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IRET/IRETD – Interrupt Return</strong></td>
+<td style="text-align:left">1100 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Jcc – Jump if Condition is Met</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">8-bit displacement</td>
+<td style="text-align:left">0111 tttn : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">full displacement</td>
+<td style="text-align:left">0000 1111 : 1000 tttn : full displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>JCXZ/JECXZ – Jump on CX/ECX Zero</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">Address-size prefix differentiates JCXZ and JECXZ</td>
+<td style="text-align:left">1110 0011 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>JMP – Unconditional Jump (to same segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">short</td>
+<td style="text-align:left">1110 1011 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">direct</td>
+<td style="text-align:left">1110 1001 : full displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">register indirect</td>
+<td style="text-align:left">1111 1111 : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory indirect</td>
+<td style="text-align:left">1111 1111 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>JMP – Unconditional Jump (to other segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">direct intersegment</td>
+<td style="text-align:left">1110 1010 : unsigned full offset, selector</td>
+</tr>
+<tr>
+<td style="text-align:left">indirect intersegment</td>
+<td style="text-align:left">1111 1111 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LAHF – Load Flags into AHRegister</strong></td>
+<td style="text-align:left">1001 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LAR – Load Access Rights Byte</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0000 1111 : 0000 0010 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0000 1111 : 0000 0010 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LDS – Load Pointer to DS</strong></td>
+<td style="text-align:left">1100 0101 : modA,B reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LEA – Load Effective Address</strong></td>
+<td style="text-align:left">1000 1101 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LEAVE – High Level Procedure Exit</strong></td>
+<td style="text-align:left">1100 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LES – Load Pointer to ES</strong></td>
+<td style="text-align:left">1100 0100 : modA,B reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LFS – Load Pointer to FS</strong></td>
+<td style="text-align:left">0000 1111 : 1011 0100 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LGDT – Load Global Descriptor Table Register</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : modA 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LGS – Load Pointer to GS</strong></td>
+<td style="text-align:left">0000 1111 : 1011 0101 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LIDT – Load Interrupt Descriptor Table Register</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : modA 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LLDT – Load Local Descriptor Table Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">LDTR from register</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">LDTR from memory</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LMSW – Load Machine Status Word</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0000 1111 : 0000 0001 : 11 110 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0000 1111 : 0000 0001 : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOCK – Assert LOCK# Signal Prefix</strong></td>
+<td style="text-align:left">1111 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LODS/LODSB/LODSW/LODSD – Load String Operand</strong></td>
+<td style="text-align:left">1010 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOOP – Loop Count</strong></td>
+<td style="text-align:left">1110 0010 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOOPZ/LOOPE – Loop Count while Zero/Equal</strong></td>
+<td style="text-align:left">1110 0001 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOOPNZ/LOOPNE – Loop Count while not Zero/Equal</strong></td>
+<td style="text-align:left">1110 0000 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LSL – Load Segment Limit</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0000 1111 : 0000 0011 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0000 1111 : 0000 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LSS – Load Pointer to SS</strong></td>
+<td style="text-align:left">0000 1111 : 1011 0010 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LTR – Load Task Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move Data</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">1000 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">1000 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to reg</td>
+<td style="text-align:left">1000 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">reg to memory</td>
+<td style="text-align:left">1000 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1100 011w : 11 000 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register (alternate encoding)</td>
+<td style="text-align:left">1011 w reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1100 011w : mod 000 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to AL, AX, or EAX</td>
+<td style="text-align:left">1010 000w : full displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX to memory</td>
+<td style="text-align:left">1010 001w : full displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move to/from Control Registers</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">CR0 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0010 : -- 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">CR2 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0010 : -- 010reg</td>
+</tr>
+<tr>
+<td style="text-align:left">CR3 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0010 : -- 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">CR4 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0010 : -- 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register from CR0-CR4</td>
+<td style="text-align:left">0000 1111 : 0010 0000 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move to/from Debug Registers</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">DR0-DR3 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0011 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left">DR4-DR5 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0011 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left">DR6-DR7 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0011 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register from DR6-DR7</td>
+<td style="text-align:left">0000 1111 : 0010 0001 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register from DR4-DR5</td>
+<td style="text-align:left">0000 1111 : 0010 0001 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register from DR0-DR3</td>
+<td style="text-align:left">0000 1111 : 0010 0001 : -- eee reg</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move to/from Segment Registers</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register to segment register</td>
+<td style="text-align:left">1000 1110 : 11 sreg3 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register to SS</td>
+<td style="text-align:left">1000 1110 : 11 sreg3 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to segment reg</td>
+<td style="text-align:left">1000 1110 : mod sreg3 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to SS</td>
+<td style="text-align:left">1000 1110 : mod sreg3 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register to register</td>
+<td style="text-align:left">1000 1100 : 11 sreg3 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register to memory</td>
+<td style="text-align:left">1000 1100 : mod sreg3 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVBE – Move data after swapping bytes</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0000 1111 : 0011 1000:1111 0000 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0000 1111 : 0011 1000:1111 0001 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVS/MOVSB/MOVSW/MOVSD – Move Data from String to String</strong></td>
+<td style="text-align:left">1010 010w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVSX – Move with Sign-Extend</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to reg</td>
+<td style="text-align:left">0000 1111 : 1011 111w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVZX – Move with Zero-Extend</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0000 1111 : 1011 011w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0000 1111 : 1011 011w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MUL – Unsigned Multiply</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with register</td>
+<td style="text-align:left">1111 011w : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with memory</td>
+<td style="text-align:left">1111 011w : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NEG – Two's Complement Negation</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">1111 011w : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">1111 011w : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NOP – No Operation</strong></td>
+<td style="text-align:left">1001 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NOP – Multi-byte No Operation</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0000 1111 0001 1111 : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0000 1111 0001 1111 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NOT – One's Complement Negation</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">1111 011w : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">1111 011w : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OR – Logical Inclusive OR</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0000 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0000 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0000 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0000 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 001 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0000 110w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 001 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OUT – Output to Port</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">fixed port</td>
+<td style="text-align:left">1110 011w : port number</td>
+</tr>
+<tr>
+<td style="text-align:left">variable port</td>
+<td style="text-align:left">1110 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OUTS – Output to DX Port 0110 111w</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POP – Pop a Word from the Stack</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">1000 1111 : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register (alternate encoding)</td>
+<td style="text-align:left">0101 1 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">1000 1111 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POP – Pop a Segment Register from the Stack (Note: CS cannot be sreg2 in this usage.)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register DS, ES</td>
+<td style="text-align:left">000 sreg2 111</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register SS</td>
+<td style="text-align:left">000 sreg2 111</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register FS, GS</td>
+<td style="text-align:left">0000 1111: 10 sreg3 001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POPA/POPAD – Pop All General Registers</strong></td>
+<td style="text-align:left">0110 0001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POPF/POPFD – Pop Stack into FLAGS or EFLAGS Register</strong></td>
+<td style="text-align:left">1001 1101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSH – Push Operand onto the Stack</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">1111 1111 : 11 110 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register (alternate encoding)</td>
+<td style="text-align:left">0101 0 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">1111 1111 : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate</td>
+<td style="text-align:left">0110 10s0 : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSH – Push Segment Register onto the Stack</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register CS,DS,ES,SS</td>
+<td style="text-align:left">000 sreg2 110</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register FS,GS</td>
+<td style="text-align:left">0000 1111: 10 sreg3 000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSHA/PUSHAD – Push All General Registers</strong></td>
+<td style="text-align:left">0110 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSHF/PUSHFD – Push Flags Register onto the Stack</strong></td>
+<td style="text-align:left">1001 1100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RCL – Rotate thru Carry Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 010 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 010 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RCR – Rotate thru Carry Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 011 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 011 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDMSR – Read from Model-Specific Register</strong></td>
+<td style="text-align:left">0000 1111 : 0011 0010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDPMC – Read Performance Monitoring Counters</strong></td>
+<td style="text-align:left">0000 1111 : 0011 0011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDTSC – Read Time-Stamp Counter</strong></td>
+<td style="text-align:left">0000 1111 : 0011 0001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDTSCP – Read Time-Stamp Counter and Processor ID</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001: 1111 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP INS – Input String</strong></td>
+<td style="text-align:left">1111 0011 : 0110 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP LODS – Load String</strong></td>
+<td style="text-align:left">1111 0011 : 1010 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP MOVS – Move String</strong></td>
+<td style="text-align:left">1111 0011 : 1010 010w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP OUTS – Output String</strong></td>
+<td style="text-align:left">1111 0011 : 0110 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP STOS – Store String</strong></td>
+<td style="text-align:left">1111 0011 : 1010 101w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPE CMPS – Compare String</strong></td>
+<td style="text-align:left">1111 0011 : 1010 011w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPE SCAS – Scan String</strong></td>
+<td style="text-align:left">1111 0011 : 1010 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPNE CMPS – Compare String</strong></td>
+<td style="text-align:left">1111 0010 : 1010 011w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPNE SCAS – Scan String</strong></td>
+<td style="text-align:left">1111 0010 : 1010 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RET – Return from Procedure (to same segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">no argument</td>
+<td style="text-align:left">1100 0011</td>
+</tr>
+<tr>
+<td style="text-align:left">adding immediate to SP</td>
+<td style="text-align:left">1100 0010 : 16-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RET – Return from Procedure (to other segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">intersegment</td>
+<td style="text-align:left">1100 1011</td>
+</tr>
+<tr>
+<td style="text-align:left">adding immediate to SP</td>
+<td style="text-align:left">1100 1010 : 16-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ROL – Rotate Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 000 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 000 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ROR – Rotate Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 001 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 001 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RSM – Resume from System Management Mode</strong></td>
+<td style="text-align:left">0000 1111 : 1010 1010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SAHF – Store AH into Flags</strong></td>
+<td style="text-align:left">1001 1110</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SAL – Shift Arithmetic Left</strong></td>
+<td style="text-align:left">same instruction as SHL</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SAR – Shift Arithmetic Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 111 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 111 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 111 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 111 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SBB – Integer Subtraction with Borrow</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0001 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0001 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0001 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0001 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 011 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0001 110w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 011 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SCAS/SCASB/SCASW/SCASD – Scan String</strong></td>
+<td style="text-align:left">1010 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SETcc – Byte Set on Condition</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0000 1111 : 1001 tttn : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0000 1111 : 1001 tttn : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SGDT – Store Global Descriptor Table Register</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : modA 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHL – Shift Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 100 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 100 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHLD – Double Precision Shift Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0000 1111 : 1010 0100 : 11 reg2 reg1 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0000 1111 : 1010 0100 : mod reg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0000 1111 : 1010 0101 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0000 1111 : 1010 0101 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHR – Shift Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">1101 000w : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">1101 000w : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">1101 001w : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">1101 001w : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 101 reg : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 101 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHRD – Double Precision Shift Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0000 1111 : 1010 1100 : 11 reg2 reg1 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0000 1111 : 1010 1100 : mod reg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0000 1111 : 1010 1101 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0000 1111 : 1010 1101 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SIDT – Store Interrupt Descriptor Table Register</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : modA 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SLDT – Store Local Descriptor Table Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">to register</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">to memory</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SMSW – Store Machine Status Word</strong></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">to register</td>
+<td style="text-align:left">0000 1111 : 0000 0001 : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">to memory</td>
+<td style="text-align:left">0000 1111 : 0000 0001 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STC – Set Carry Flag</strong></td>
+<td style="text-align:left">1111 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STD – Set Direction Flag</strong></td>
+<td style="text-align:left">1111 1101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STI – Set Interrupt Flag</strong></td>
+<td style="text-align:left">1111 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STOS/STOSB/STOSW/STOSD – Store String Data</strong></td>
+<td style="text-align:left">1010 101w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STR – Store Task Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">to register</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">to memory</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SUB – Integer Subtraction</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0010 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0010 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0010 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0010 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 101 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0010 110w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 101 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>TEST – Logical Compare</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 and register2</td>
+<td style="text-align:left">1000 010w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory and register</td>
+<td style="text-align:left">1000 010w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate and register</td>
+<td style="text-align:left">1111 011w : 11 000 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate and AL, AX, or EAX</td>
+<td style="text-align:left">1010 100w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate and memory</td>
+<td style="text-align:left">1111 011w : mod 000 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>UD0 – Undefined instruction</strong></td>
+<td style="text-align:left">0000 1111 : 1111 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>UD1 – Undefined instruction</strong></td>
+<td style="text-align:left">0000 1111 : 0000 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>UD2 – Undefined instruction</strong></td>
+<td style="text-align:left">0000 FFFF : 0000 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>VERR – Verify a Segment for Reading</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>VERW – Verify a Segment for Writing</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0000 1111 : 0000 0000 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>WAIT – Wait</strong></td>
+<td style="text-align:left">1001 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>WBINVD – Writeback and Invalidate Data Cache</strong></td>
+<td style="text-align:left">0000 1111 : 0000 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>WRMSR – Write to Model-Specific Register</strong></td>
+<td style="text-align:left">0000 1111 : 0011 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XADD – Exchange and Add</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1100 000w : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, reg</td>
+<td style="text-align:left">0000 1111 : 1100 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XCHG – Exchange Register/Memory with Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with register2</td>
+<td style="text-align:left">1000 011w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">AX or EAX with reg</td>
+<td style="text-align:left">1001 0 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory with reg</td>
+<td style="text-align:left">1000 011w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XLAT/XLATB – Table Look-up Translation</strong></td>
+<td style="text-align:left">1101 0111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XOR – Logical Exclusive OR</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0011 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0011 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0011 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0011 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 110 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0011 010w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 110 r/m : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Prefix Bytes</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">address size</td>
+<td style="text-align:left">0110 0111</td>
+</tr>
+<tr>
+<td style="text-align:left">LOCK</td>
+<td style="text-align:left">1111 0000</td>
+</tr>
+<tr>
+<td style="text-align:left">operand size</td>
+<td style="text-align:left">0110 0110</td>
+</tr>
+<tr>
+<td style="text-align:left">CS segment override</td>
+<td style="text-align:left">0010 1110</td>
+</tr>
+<tr>
+<td style="text-align:left">DS segment override</td>
+<td style="text-align:left">0011 1110</td>
+</tr>
+<tr>
+<td style="text-align:left">ES segment override</td>
+<td style="text-align:left">0010 0110</td>
+</tr>
+<tr>
+<td style="text-align:left">FS segment override</td>
+<td style="text-align:left">0110 0100</td>
+</tr>
+<tr>
+<td style="text-align:left">GS segment override</td>
+<td style="text-align:left">0110 0101</td>
+</tr>
+<tr>
+<td style="text-align:left">SS segment override</td>
+<td style="text-align:left">0011 0110</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li>The multi-byte NOP instruction does not alter the content of the register and will not issue a memory operation.</li>
+</ul>
+<h2 id="general-purpose-instruction-formats-and-encodings-for-64-bit-mode">General Purpose Instruction Formats and Encodings for 64-Bit Mode</h2>
+<p>Tables below show machine instruction formats and encodings for general purpose instructions in 64-bit mode.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Symbol</th>
+<th style="text-align:left">Application</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">S</td>
+<td style="text-align:left">If the value of REX.W. is 1, it overrides the presence of 66H.</td>
+</tr>
+<tr>
+<td style="text-align:center">W</td>
+<td style="text-align:left">The value of bit W. in REX is has no effect.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Instruction and Format</th>
+<th style="text-align:left">Encoding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>ADC – ADD with Carry</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 0R0B : 0001 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B : 0001 0001 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B : 0001 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B : 0001 0011 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB : 0001 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to qwordregister</td>
+<td style="text-align:left">0100 1RXB : 0001 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0100 0RXB : 0001 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory</td>
+<td style="text-align:left">0100 1RXB : 0001 0001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">0100 000B : 1000 00sw : 11 010 reg : immediate</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to qwordregister</td>
+<td style="text-align:left">0100 100B : 1000 0001 : 11 010 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to qwordregister</td>
+<td style="text-align:left">0100 1R0B : 1000 0011 : 11 010 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0001 010w : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to RAX</td>
+<td style="text-align:left">0100 1000 : 0000 0101 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">0100 00XB : 1000 00sw : mod 010 r/m : immediate</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64</td>
+<td style="text-align:left">0100 10XB : 1000 0001 : mod 010 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory64</td>
+<td style="text-align:left">0100 10XB : 1000 0031 : mod 010 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ADD – Add</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 0R0B : 0000 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 0000 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B : 0000 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 0010 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB : 0000 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to qwordregister</td>
+<td style="text-align:left">0100 1RXB : 0000 0000 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0100 0RXB : 0000 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory64</td>
+<td style="text-align:left">0100 1RXB : 0000 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">0100 0000B : 1000 00sw : 11 000 reg : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to qwordregister</td>
+<td style="text-align:left">0100 100B : 1000 0001 : 11 010 qwordreg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0000 010w : immediate8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to RAX</td>
+<td style="text-align:left">0100 1000 : 0000 0101 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">0100 00XB : 1000 00sw : mod 000 r/m : immediate</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64</td>
+<td style="text-align:left">0100 10XB : 1000 0001 : mod 010 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory64</td>
+<td style="text-align:left">0100 10XB : 1000 0011 : mod 010 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>AND – Logical AND</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 0R0B 0010 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0010 0001 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B 0010 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 1R0B 0010 0011 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB 0010 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to qwordregister</td>
+<td style="text-align:left">0100 1RXB : 0010 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0100 0RXB : 0010 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory64</td>
+<td style="text-align:left">0100 1RXB : 0010 0001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">0100 000B : 1000 00sw : 11 100 reg : immediate</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0001 : 11 100 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0010 010w : immediate</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to RAX</td>
+<td style="text-align:left">0100 1000 0010 1001 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">0100 00XB : 1000 00sw : mod 100 r/m : immediate</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64</td>
+<td style="text-align:left">0100 10XB : 1000 0001 : mod 100 r/m : immediate32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory64</td>
+<td style="text-align:left">0100 10XB : 1000 0011 : mod 100 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSF – Bit Scan Forward</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1011 1100 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 1100 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1011 1100 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, qwordregister</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 1100 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSR – Bit Scan Reverse</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1011 1101 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 1101 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1011 1101 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, qwordregister</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 1101 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSWAP – Byte Swap</strong></td>
+<td style="text-align:left">0000 1111 : 1100 1 reg</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BSWAP – Byte Swap</strong></td>
+<td style="text-align:left">0100 100B 0000 1111 : 1100 1 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BT – Bit Test</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1011 1010 : 11 100 reg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister, immediate8</td>
+<td style="text-align:left">0100 100B 1111 : 1011 1010 : 11 100 qwordreg: imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1011 1010 : mod 100 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, immediate8</td>
+<td style="text-align:left">0100 10XB 0000 1111 : 1011 1010 : mod 100 r/m : imm8 data</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1010 0011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 0011 : 11 qwordreg2 qwordreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, reg</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1010 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, qwordreg</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BTC – Bit Test and Complemen</strong>t</td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1011 1010 : 11 111 reg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister, immediate8</td>
+<td style="text-align:left">0100 100B 0000 1111 : 1011 1010 : 11 111 qwordreg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1011 1010 : mod 111 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, immediate8</td>
+<td style="text-align:left">0100 10XB 0000 1111 : 1011 1010 : mod 111 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1011 1011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 1011 : 11 qwordreg2 qwordreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1011 1011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, qwordreg</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 1011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BTR – Bit Test and Reset</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1011 1010 : 11 110 reg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister, immediate8</td>
+<td style="text-align:left">0100 100B 0000 1111 : 1011 1010 : 11 110 qwordreg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1011 1010 : mod 110 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, immediate8</td>
+<td style="text-align:left">0100 10XB 0000 1111 : 1011 1010 : mod 110 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1011 0011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 0011 : 11 qwordreg2 qwordreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1011 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, qwordreg</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BTS – Bit Test and Set</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register, immediate</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1011 1010 : 11 101 reg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister, immediate8</td>
+<td style="text-align:left">0100 100B 0000 1111 : 1011 1010 : 11 101 qwordreg: imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, immediate</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1011 1010 : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, immediate8</td>
+<td style="text-align:left">0100 10XB 0000 1111 : 1011 1010 : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1010 1011 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 1011 : 11 qwordreg2 qwordreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1010 1011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, qwordreg</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 1011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CALL – Call Procedure (in same segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">direct</td>
+<td style="text-align:left">1110 1000 : displacement32</td>
+</tr>
+<tr>
+<td style="text-align:left">register indirect</td>
+<td style="text-align:left">0100 WR00w 1111 1111 : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory indirect</td>
+<td style="text-align:left">0100 W0XBw 1111 1111 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CALL – Call Procedure (in other segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">indirect</td>
+<td style="text-align:left">1111 1111 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">indirect</td>
+<td style="text-align:left">0100 10XB 0100 1000 1111 1111 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CBW – Convert Byte to Word</strong></td>
+<td style="text-align:left">1001 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CDQ – Convert Doubleword to Qword+</strong></td>
+<td style="text-align:left">1001 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CDQE – RAX, Sign-Extend of EAX</strong></td>
+<td style="text-align:left">0100 1000 1001 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLC – Clear Carry Flag</strong></td>
+<td style="text-align:left">1111 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLD – Clear Direction Flag</strong></td>
+<td style="text-align:left">1111 1100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLI – Clear Interrupt Flag</strong></td>
+<td style="text-align:left">1111 1010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CLTS – Clear Task-Switched Flag in CR0</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0110</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMC – Complement Carry Fla</strong>g</td>
+<td style="text-align:left">1111 0101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMP – Compare Two Operands</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with register2</td>
+<td style="text-align:left">0100 0R0B 0011 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 with qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0011 1001 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 with register1</td>
+<td style="text-align:left">0100 0R0B 0011 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister2 with qwordregister1</td>
+<td style="text-align:left">0100 1R0B 0011 101w : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory with register</td>
+<td style="text-align:left">0100 0RXB 0011 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 with qwordregister</td>
+<td style="text-align:left">0100 1RXB 0011 1001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register with memory</td>
+<td style="text-align:left">0100 0RXB 0011 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister with memory64</td>
+<td style="text-align:left">0100 1RXB 0011 101w1 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate with register</td>
+<td style="text-align:left">0100 000B 1000 00sw : 11 111 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 with qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0001 : 11 111 qwordreg : imm64</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate with AL, AX, or EAX</td>
+<td style="text-align:left">0011 110w : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 with RAX</td>
+<td style="text-align:left">0100 1000 0011 1101 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate with memory</td>
+<td style="text-align:left">0100 00XB 1000 00sw : mod 111 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 with memory64</td>
+<td style="text-align:left">0100 1RXB 1000 0001 : mod 111 r/m : imm64</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 with memory64</td>
+<td style="text-align:left">0100 1RXB 1000 0011 : mod 111 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMPS/CMPSB/CMPSW/CMPSD/CMPSQ – Compare String Operands</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">compare string operands [ X at DS:(E)SI with Y at ES:(E)DI ]</td>
+<td style="text-align:left">1010 011w</td>
+</tr>
+<tr>
+<td style="text-align:left">qword at address RSI with qword at address RDI</td>
+<td style="text-align:left">0100 1000 1010 0111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CMPXCHG – Compare and Exchange</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0000 1111 : 1011 000w : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1, byteregister2</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1011 0000 : 11 bytereg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 100B 0000 1111 : 1011 0001 : 11 qwordreg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0000 1111 : 1011 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8, byteregister</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1011 0000 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, qwordregister</td>
+<td style="text-align:left">0100 10XB 0000 1111 : 1011 0001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CPUID – CPU Identification</strong></td>
+<td style="text-align:left">0000 1111 : 1010 0010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CQO – Sign-Extend RAX</strong></td>
+<td style="text-align:left">0100 1000 1001 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CWD – Convert Word to Doubleword</strong></td>
+<td style="text-align:left">1001 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>CWDE – Convert Word to Doubleword</strong></td>
+<td style="text-align:left">1001 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DEC – Decrement by 1</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 000B 1111 111w : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister</td>
+<td style="text-align:left">0100 100B 1111 1111 : 11 001 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB 1111 111w : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64</td>
+<td style="text-align:left">0100 10XB 1111 1111 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DIV – Unsigned Divide</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by register</td>
+<td style="text-align:left">0100 000B 1111 011w : 11 110 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">Divide RDX:RAX by qwordregister</td>
+<td style="text-align:left">0100 100B 1111 0111 : 11 110 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by memory</td>
+<td style="text-align:left">0100 00XB 1111 011w : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">Divide RDX:RAX by memory64</td>
+<td style="text-align:left">0100 10XB 1111 0111 : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ENTER – Make Stack Frame for High Level Procedure</strong></td>
+<td style="text-align:left">1100 1000 : 16-bit displacement : 8-bit level (L)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>HLT – Halt</strong></td>
+<td style="text-align:left">1111 0100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IDIV – Signed Divide</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by register</td>
+<td style="text-align:left">0100 000B 1111 011w : 11 111 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">RDX:RAX by qwordregister</td>
+<td style="text-align:left">0100 100B 1111 0111 : 11 111 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX by memory</td>
+<td style="text-align:left">0100 00XB 1111 011w : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">RDX:RAX by memory64</td>
+<td style="text-align:left">0100 10XB 1111 0111 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IMUL – Signed Multiply</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with register</td>
+<td style="text-align:left">0100 000B 1111 011w : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">RDX:RAX := RAX with qwordregister</td>
+<td style="text-align:left">0100 100B 1111 0111 : 11 101 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with memory</td>
+<td style="text-align:left">0100 00XB 1111 011w : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">RDX:RAX := RAX with memory64</td>
+<td style="text-align:left">0100 10XB 1111 0111 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with register2</td>
+<td style="text-align:left">0000 1111 : 1010 1111 : 11 : reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 := qwordregister1 with qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 1111 : 11 : qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register with memory</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1010 1111 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister := qwordregister with memory64</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 1111 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with immediate to register2</td>
+<td style="text-align:left">0100 0R0B 0110 10s1 : 11 reg1 reg2 : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 := qwordregister2 with sign-extended immediate8</td>
+<td style="text-align:left">0100 1R0B 0110 1011 : 11 qwordreg1 qwordreg2 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 := qwordregister2 with immediate32</td>
+<td style="text-align:left">0100 1R0B 0110 1001 : 11 qwordreg1 qwordreg2 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">memory with immediate to register</td>
+<td style="text-align:left">0100 0RXB 0110 10s1 : mod reg r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister := memory64 with sign-extended immediate8</td>
+<td style="text-align:left">0100 1RXB 0110 1011 : mod qwordreg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister := memory64 with immediate32</td>
+<td style="text-align:left">0100 1RXB 0110 1001 : mod qwordreg r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IN – Input From Port</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">fixed port</td>
+<td style="text-align:left">1110 010w : port number</td>
+</tr>
+<tr>
+<td style="text-align:left">variable port</td>
+<td style="text-align:left">1110 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INC – Increment by 1</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">reg</td>
+<td style="text-align:left">0100 000B 1111 111w : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordreg</td>
+<td style="text-align:left">0100 100B 1111 1111 : 11 000 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB 1111 111w : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64</td>
+<td style="text-align:left">0100 10XB 1111 1111 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INS – Input from DX Port</strong></td>
+<td style="text-align:left">0110 110w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INT n – Interrupt Type n</strong></td>
+<td style="text-align:left">1100 1101 : type</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INT – Single-Step Interrupt 3</strong></td>
+<td style="text-align:left">1100 1100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INTO – Interrupt 4 on Overflow</strong></td>
+<td style="text-align:left">1100 1110</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INVD – Invalidate Cache</strong></td>
+<td style="text-align:left">0000 1111 : 0000 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INVLPG – Invalidate TLB Entry</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>INVPCID – Invalidate Process-Context Identifier</strong></td>
+<td style="text-align:left">0110 0110:0000 1111:0011 1000:1000 0010: mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>IRETO – Interrupt Return</strong></td>
+<td style="text-align:left">1100 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Jcc – Jump if Condition is Met</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">8-bit displacement</td>
+<td style="text-align:left">0111 tttn : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">displacements (excluding 16-bit relative offsets)</td>
+<td style="text-align:left">0000 1111 : 1000 tttn : displacement32</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>JCXZ/JECXZ – Jump on CX/ECX Zero</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">Address-size prefix differentiates JCXZ and JECXZ</td>
+<td style="text-align:left">1110 0011 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>JMP – Unconditional Jump (to same segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">short</td>
+<td style="text-align:left">1110 1011 : 8-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">direct</td>
+<td style="text-align:left">1110 1001 : displacement32</td>
+</tr>
+<tr>
+<td style="text-align:left">register indirect</td>
+<td style="text-align:left">0100 W00Bw : 1111 1111 : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory indirect</td>
+<td style="text-align:left">0100 W0XBw : 1111 1111 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>JMP – Unconditional Jump (to other segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">indirect intersegment</td>
+<td style="text-align:left">0100 00XB : 1111 1111 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">64-bit indirect intersegment</td>
+<td style="text-align:left">0100 10XB : 1111 1111 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">LAR – Load Access Rights Byte</td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0100 0R0B : 0000 1111 : 0000 0010 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from dwordregister to qwordregister, masked by 00FxFF00H</td>
+<td style="text-align:left">0100 WR0B : 0000 1111 : 0000 0010 : 11 qwordreg1 dwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 0000 0010 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory32 to qwordregister, masked by 00FxFF00H</td>
+<td style="text-align:left">0100 WRXB 0000 1111 : 0000 0010 : mod r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LEA – Load Effective Address</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">in wordregister/dwordregister</td>
+<td style="text-align:left">0100 0RXB : 1000 1101 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">in qwordregister</td>
+<td style="text-align:left">0100 1RXB : 1000 1101 : modA qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LEAVE – High Level Procedure Exit</strong></td>
+<td style="text-align:left">1100 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LFS – Load Pointer to FS</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">FS:r16/r32 with far pointer from memory</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 1011 0100 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">FS:r64 with far pointer from memory</td>
+<td style="text-align:left">0100 1RXB : 0000 1111 : 1011 0100 : modA qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LGDT – Load Global Descriptor Table Register</strong></td>
+<td style="text-align:left">0100 10XB : 0000 1111 : 0000 0001 : modA 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LGS – Load Pointer to GS</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">GS:r16/r32 with far pointer from memory</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 1011 0101 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">GS:r64 with far pointer from memory</td>
+<td style="text-align:left">0100 1RXB : 0000 1111 : 1011 0101 : modA qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LIDT – Load Interrupt Descriptor Table Register</strong></td>
+<td style="text-align:left">0100 10XB : 0000 1111 : 0000 0001 : modA 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LLDT – Load Local Descriptor Table Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">LDTR from register</td>
+<td style="text-align:left">0100 000B : 0000 1111 : 0000 0000 : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">LDTR from memory</td>
+<td style="text-align:left">0100 00XB :0000 1111 : 0000 0000 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LMSW – Load Machine Status Word</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0100 000B : 0000 1111 : 0000 0001 : 11 110 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0100 00XB :0000 1111 : 0000 0001 : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOCK – Assert LOCK# Signal Prefix</strong></td>
+<td style="text-align:left">1111 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LODS/LODSB/LODSW/LODSD/LODSQ – Load String Operand</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">at DS:(E)SI to AL/EAX/EAX</td>
+<td style="text-align:left">1010 110w</td>
+</tr>
+<tr>
+<td style="text-align:left">at (R)SI to RAX</td>
+<td style="text-align:left">0100 1000 1010 1101</td>
+</tr>
+<tr>
+<td style="text-align:left">LOOP – Loop Count</td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">if count ≠ 0, 8-bit displacement</td>
+<td style="text-align:left">1110 0010</td>
+</tr>
+<tr>
+<td style="text-align:left">if count ≠ 0, RIP + 8-bit displacement sign-extended to 64-bits</td>
+<td style="text-align:left">0100 1000 1110 0010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOOPE – Loop Count while Zero/Equal</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">if count ≠ 0 &amp; ZF =1, 8-bit displacement</td>
+<td style="text-align:left">1110 0001</td>
+</tr>
+<tr>
+<td style="text-align:left">if count ≠ 0 &amp; ZF = 1, RIP + 8-bit displacement sign-extended to 64-bits</td>
+<td style="text-align:left">0100 1000 1110 0001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LOOPNE/LOOPNZ – Loop Count while not Zero/Equal</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">if count ≠ 0 &amp; ZF = 0, 8-bit displacement</td>
+<td style="text-align:left">1110 0000</td>
+</tr>
+<tr>
+<td style="text-align:left">if count ≠ 0 &amp; ZF = 0, RIP + 8-bit displacement sign-extended to 64-bits</td>
+<td style="text-align:left">0100 1000 1110 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LSL – Load Segment Limit</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0000 1111 : 0000 0011 : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from qwordregister</td>
+<td style="text-align:left">0100 1R00 0000 1111 : 0000 0011 : 11 qwordreg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory16</td>
+<td style="text-align:left">0000 1111 : 0000 0011 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory64</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 0000 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LSS – Load Pointer to SS</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">SS:r16/r32 with far pointer from memory</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 1011 0010 : modA reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">SS:r64 with far pointer from memory</td>
+<td style="text-align:left">0100 1WXB : 0000 1111 : 1011 0010 : modA qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LTR – Load Task Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">from register</td>
+<td style="text-align:left">0100 0R00 : 0000 1111 : 0000 0000 : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">from memory</td>
+<td style="text-align:left">0100 00XB : 0000 1111 : 0000 0000 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move Data</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 0R0B : 1000 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B 1000 1001 : 11 qwordeg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B : 1000 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister2 to qwordregister1</td>
+<td style="text-align:left">0100 1R0B 1000 1011 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to reg</td>
+<td style="text-align:left">0100 0RXB : 1000 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to qwordregister</td>
+<td style="text-align:left">0100 1RXB 1000 1011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">reg to memory</td>
+<td style="text-align:left">0100 0RXB : 1000 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory64</td>
+<td style="text-align:left">0100 1RXB 1000 1001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">0100 000B : 1100 011w : 11 000 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to qwordregister (zero extend)</td>
+<td style="text-align:left">0100 100B 1100 0111 : 11 000 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register (alternate encoding)</td>
+<td style="text-align:left">0100 000B : 1011 w reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate64 to qwordregister (alternate encoding)</td>
+<td style="text-align:left">0100 100B 1011 1000 reg : imm64</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">0100 00XB : 1100 011w : mod 000 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64 (zero extend)</td>
+<td style="text-align:left">0100 10XB 1100 0111 : mod 000 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to AL, AX, or EAX</td>
+<td style="text-align:left">0100 0000 : 1010 000w : displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to RAX</td>
+<td style="text-align:left">0100 1000 1010 0001 : displacement64</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX to memory</td>
+<td style="text-align:left">0100 0000 : 1010 001w : displacement</td>
+</tr>
+<tr>
+<td style="text-align:left">RAX to memory64</td>
+<td style="text-align:left">0100 1000 1010 0011 : displacement64</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move to/from Control Registers</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">CR0-CR4 from register</td>
+<td style="text-align:left">0100 0R0B : 0000 1111 : 0010 0010 : 11 eee reg (eee = CR#)</td>
+</tr>
+<tr>
+<td style="text-align:left">CRx from qwordregister</td>
+<td style="text-align:left">0100 1R0B : 0000 1111 : 0010 0010 : 11 eee qwordreg (Reee = CR#)</td>
+</tr>
+<tr>
+<td style="text-align:left">register from CR0-CR4</td>
+<td style="text-align:left">0100 0R0B : 0000 1111 : 0010 0000 : 11 eee reg (eee = CR#)</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister from CRx</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 0010 0000 : 11 eee qwordreg (Reee = CR#)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move to/from Debug Registers</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">DR0-DR7 from register</td>
+<td style="text-align:left">0000 1111 : 0010 0011 : 11 eee reg (eee = DR#)</td>
+</tr>
+<tr>
+<td style="text-align:left">DR0-DR7 from quadregister</td>
+<td style="text-align:left">0100 10OB 0000 1111 : 0010 0011 : 11 eee reg (eee = DR#)</td>
+</tr>
+<tr>
+<td style="text-align:left">register from DR0-DR7</td>
+<td style="text-align:left">0000 1111 : 0010 0001 : 11 eee reg (eee = DR#)</td>
+</tr>
+<tr>
+<td style="text-align:left">quadregister from DR0-DR7</td>
+<td style="text-align:left">0100 10OB 0000 1111 : 0010 0001 : 11 eee quadreg (eee = DR#)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOV – Move to/from Segment Registers</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register to segment register</td>
+<td style="text-align:left">0100 W00Bw : 1000 1110 : 11 sreg reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register to SS</td>
+<td style="text-align:left">0100 000B : 1000 1110 : 11 sreg reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to segment register</td>
+<td style="text-align:left">0100 00XB : 1000 1110 : mod sreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to segment register (lower 16 bits)</td>
+<td style="text-align:left">0100 10XB 1000 1110 : mod sreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to SS</td>
+<td style="text-align:left">0100 00XB : 1000 1110 : mod sreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register to register</td>
+<td style="text-align:left">0100 000B : 1000 1100 : 11 sreg reg</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register to qwordregister (zero extended)</td>
+<td style="text-align:left">0100 100B 1000 1100 : 11 sreg qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register to memory</td>
+<td style="text-align:left">0100 00XB : 1000 1100 : mod sreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register to memory64 (zero extended)</td>
+<td style="text-align:left">0100 10XB 1000 1100 : mod sreg3 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVBE – Move data after swapping bytes</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 0011 1000:1111 0000 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to qwordregister</td>
+<td style="text-align:left">0100 1RXB : 0000 1111 : 0011 1000:1111 0000 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0100 0RXB :0000 1111 : 0011 1000:1111 0001 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory64</td>
+<td style="text-align:left">0100 1RXB :0000 1111 : 0011 1000:1111 0001 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVS/MOVSB/MOVSW/MOVSD/MOVSQ – Move Data from String to String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">Move data from string to string</td>
+<td style="text-align:left">1010 010w</td>
+</tr>
+<tr>
+<td style="text-align:left">Move data from string to string (qword)</td>
+<td style="text-align:left">0100 1000 1010 0101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVSX/MOVSXD – Move with Sign-Extend</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B : 0000 1111 : 1011 111w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister2 to qwordregister1 (sign-extend)</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 1110 : 11 quadreg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">wordregister2 to qwordregister1</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 1111 : 11 quadreg1 wordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">dwordregister2 to qwordregister1</td>
+<td style="text-align:left">0100 1R0B 0110 0011 : 11 quadreg1 dwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 1011 111w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 to qwordregister (sign-extend)</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 1110 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory16 to qwordregister</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 1111 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory32 to qwordregister</td>
+<td style="text-align:left">0100 1RXB 0110 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MOVZX – Move with Zero-Extend</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B : 0000 1111 : 1011 011w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">dwordregister2 to qwordregister1</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1011 0111 : 11 qwordreg1 dwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB : 0000 1111 : 1011 011w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory32 to qwordregister</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1011 0111 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MUL – Unsigned Multiply</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with register</td>
+<td style="text-align:left">0100 000B : 1111 011w : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">RAX with qwordregister (to RDX:RAX)</td>
+<td style="text-align:left">0100 100B 1111 0111 : 11 100 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">AL, AX, or EAX with memory</td>
+<td style="text-align:left">0100 00XB 1111 011w : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">RAX with memory64 (to RDX:RAX)</td>
+<td style="text-align:left">0100 10XB 1111 0111 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NEG – Two's Complement Negation</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 000B : 1111 011w : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister</td>
+<td style="text-align:left">0100 100B 1111 0111 : 11 011 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB : 1111 011w : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64</td>
+<td style="text-align:left">0100 10XB 1111 0111 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NOP – No Operation</strong></td>
+<td style="text-align:left">1001 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>NOT – One's Complement Negation</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 000B : 1111 011w : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister</td>
+<td style="text-align:left">0100 000B 1111 0111 : 11 010 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB : 1111 011w : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64</td>
+<td style="text-align:left">0100 1RXB 1111 0111 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OR – Logical Inclusive OR</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0000 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1 to byteregister2</td>
+<td style="text-align:left">0100 0R0B 0000 1000 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0000 1001 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0000 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister2 to byteregister1</td>
+<td style="text-align:left">0100 0R0B 0000 1010 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister2 to qwordregister1</td>
+<td style="text-align:left">0100 0R0B 0000 1011 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0000 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 to byteregister</td>
+<td style="text-align:left">0100 0RXB 0000 1010 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 to qwordregister</td>
+<td style="text-align:left">0100 0RXB 0000 1011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0000 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister to memory8</td>
+<td style="text-align:left">0100 0RXB 0000 1000 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory64</td>
+<td style="text-align:left">0100 1RXB 0000 1001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">1000 00sw : 11 001 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to byteregister</td>
+<td style="text-align:left">0100 000B 1000 0000 : 11 001 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to qwordregister</td>
+<td style="text-align:left">0100 000B 1000 0001 : 11 001 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to qwordregister</td>
+<td style="text-align:left">0100 000B 1000 0011 : 11 001 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0000 110w : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate64 to RAX</td>
+<td style="text-align:left">0100 1000 0000 1101 : imm64</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">1000 00sw : mod 001 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory8</td>
+<td style="text-align:left">0100 00XB 1000 0000 : mod 001 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64</td>
+<td style="text-align:left">0100 00XB 1000 0001 : mod 001 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory64</td>
+<td style="text-align:left">0100 00XB 1000 0011 : mod 001 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OUT – Output to Port</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">fixed port</td>
+<td style="text-align:left">1110 011w : port number</td>
+</tr>
+<tr>
+<td style="text-align:left">variable port</td>
+<td style="text-align:left">1110 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OUTS – Output to DX Port</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">output to DX Port</td>
+<td style="text-align:left">0110 111w</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POP – Pop a Value from the Stack</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">wordregister</td>
+<td style="text-align:left">0101 0101 : 0100 000B : 1000 1111 : 11 000 reg16</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister</td>
+<td style="text-align:left">0100 W00BS : 1000 1111 : 11 000 reg64</td>
+</tr>
+<tr>
+<td style="text-align:left">wordregister (alternate encoding)</td>
+<td style="text-align:left">0101 0101 : 0100 000B : 0101 1 reg16</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister (alternate encoding)</td>
+<td style="text-align:left">0100 W00B : 0101 1 reg64</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64</td>
+<td style="text-align:left">0100 W0XBS : 1000 1111 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory16</td>
+<td style="text-align:left">0101 0101 : 0100 00XB 1000 1111 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POP – Pop a Segment Register from the Stack</strong> (Note: CS cannot be sreg2 in this usage.)</td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register FS, GS</td>
+<td style="text-align:left">0000 1111: 10 sreg3 001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>POPF/POPFQ – Pop Stack into FLAGS/RFLAGS Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">pop stack to FLAGS register</td>
+<td style="text-align:left">0101 0101 : 1001 1101</td>
+</tr>
+<tr>
+<td style="text-align:left">pop Stack to RFLAGS register</td>
+<td style="text-align:left">0100 1000 : 1001 1101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSH – Push Operand onto the Stack</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">wordregister</td>
+<td style="text-align:left">0101 0101 : 0100 000B : 1111 1111 : 11 110 reg16</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister</td>
+<td style="text-align:left">0100 W00BS : 1111 1111 : 11 110 reg64</td>
+</tr>
+<tr>
+<td style="text-align:left">wordregister (alternate encoding)</td>
+<td style="text-align:left">0101 0101 : 0100 000B : 0101 0 reg16</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister (alternate encoding)</td>
+<td style="text-align:left">0100 W00BS : 0101 0 reg64</td>
+</tr>
+<tr>
+<td style="text-align:left">memory16</td>
+<td style="text-align:left">0101 0101 : 0100 000B : 1111 1111 : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64</td>
+<td style="text-align:left">0100 W00BS : 1111 1111 : mod 110 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8</td>
+<td style="text-align:left">0110 1010 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate16</td>
+<td style="text-align:left">0101 0101 : 0110 1000 : imm16</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate64</td>
+<td style="text-align:left">0110 1000 : imm64</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSH – Push Segment Register onto the Stack</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">segment register FS,GS</td>
+<td style="text-align:left">0000 1111: 10 sreg3 000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>PUSHF/PUSHFD – Push Flags Register onto the Stack</strong></td>
+<td style="text-align:left">1001 1100</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RCL – Rotate thru Carry Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B : 1101 000w : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 010 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB : 1101 000w : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B : 1101 001w : 11 010 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 100B 1101 0011 : 11 010 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB : 1101 001w : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 010 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 000B : 1100 000w : 11 010 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 010 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB : 1100 000w : mod 010 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 010 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RCR – Rotate thru Carry Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B : 1101 000w : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 011 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB : 1101 000w : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B : 1101 001w : 11 011 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 000B 1101 0010 : 11 011 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB : 1101 001w : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 011 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 000B : 1100 000w : 11 011 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 011 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB : 1100 000w : mod 011 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 011 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDMSR – Read from Model-Specific Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">load ECX-specified register into EDX:EAX</td>
+<td style="text-align:left">0000 1111 : 0011 0010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDPMC – Read Performance Monitoring Counters</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">load ECX-specified performance counter into EDX:EAX</td>
+<td style="text-align:left">0000 1111 : 0011 0011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDTSC – Read Time-Stamp Counter</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">read time-stamp counter into EDX:EAX</td>
+<td style="text-align:left">0000 1111 : 0011 0001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RDTSCP – Read Time-Stamp Counter and Processor ID</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001: 1111 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP INS – Input String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP LODS – Load String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP MOVS – Move String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP OUTS – Output String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REP STOS – Store String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPE CMPS – Compare String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPE SCAS – Scan String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPNE CMPS – Compare String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>REPNE SCAS – Scan String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RET – Return from Procedure (to same segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">no argument</td>
+<td style="text-align:left">1100 0011</td>
+</tr>
+<tr>
+<td style="text-align:left">adding immediate to SP</td>
+<td style="text-align:left">1100 0010 : 16-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RET – Return from Procedure (to other segment)</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">intersegment</td>
+<td style="text-align:left">1100 1011</td>
+</tr>
+<tr>
+<td style="text-align:left">adding immediate to SP</td>
+<td style="text-align:left">1100 1010 : 16-bit displacement</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ROL – Rotate Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B 1101 000w : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by 1</td>
+<td style="text-align:left">0100 000B 1101 0000 : 11 000 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 000 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB 1101 000w : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by 1</td>
+<td style="text-align:left">0100 00XB 1101 0000 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B 1101 001w : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by CL</td>
+<td style="text-align:left">0100 000B 1101 0010 : 11 000 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 100B 1101 0011 : 11 000 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB 1101 001w : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by CL</td>
+<td style="text-align:left">0100 00XB 1101 0010 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">1100 000w : 11 000 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by immediate count</td>
+<td style="text-align:left">0100 000B 1100 0000 : 11 000 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 000 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">1100 000w : mod 000 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 0000 : mod 000 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 000 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ROR – Rotate Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B 1101 000w : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by 1</td>
+<td style="text-align:left">0100 000B 1101 0000 : 11 001 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 001 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB 1101 000w : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by 1</td>
+<td style="text-align:left">0100 00XB 1101 0000 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B 1101 001w : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by CL</td>
+<td style="text-align:left">0100 000B 1101 0010 : 11 001 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 100B 1101 0011 : 11 001 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB 1101 001w : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by CL</td>
+<td style="text-align:left">0100 00XB 1101 0010 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 000B 1100 000w : 11 001 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by immediate count</td>
+<td style="text-align:left">0100 000B 1100 0000 : 11 001 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 001 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 000w : mod 001 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 0000 : mod 001 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 001 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>RSM – Resume from System Management Mode</strong></td>
+<td style="text-align:left">0000 1111 : 1010 1010</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SAL – Shift Arithmetic Left</strong></td>
+<td style="text-align:left">same instruction as SHL</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SAR – Shift Arithmetic Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B 1101 000w : 11 111 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by 1</td>
+<td style="text-align:left">0100 000B 1101 0000 : 11 111 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 111 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB 1101 000w : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by 1</td>
+<td style="text-align:left">0100 00XB 1101 0000 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B 1101 001w : 11 111 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by CL</td>
+<td style="text-align:left">0100 000B 1101 0010 : 11 111 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 100B 1101 0011 : 11 111 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB 1101 001w : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by CL</td>
+<td style="text-align:left">0100 00XB 1101 0010 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 111 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 000B 1100 000w : 11 111 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by immediate count</td>
+<td style="text-align:left">0100 000B 1100 0000 : 11 111 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 111 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 000w : mod 111 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 0000 : mod 111 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 111 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SBB – Integer Subtraction with Borrow</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 0R0B 0001 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1 to byteregister2</td>
+<td style="text-align:left">0100 0R0B 0001 1000 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">quadregister1 to quadregister2</td>
+<td style="text-align:left">0100 1R0B 0001 1001 : 11 quadreg1 quadreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B 0001 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister2 to byteregister1</td>
+<td style="text-align:left">0100 0R0B 0001 1010 : 11 reg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister2 to byteregister1</td>
+<td style="text-align:left">0100 1R0B 0001 1011 : 11 reg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB 0001 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 to byteregister</td>
+<td style="text-align:left">0100 0RXB 0001 1010 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to byteregister</td>
+<td style="text-align:left">0100 1RXB 0001 1011 : mod quadreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0100 0RXB 0001 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister to memory8</td>
+<td style="text-align:left">0100 0RXB 0001 1000 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">quadregister to memory64</td>
+<td style="text-align:left">0100 1RXB 0001 1001 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">0100 000B 1000 00sw : 11 011 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to byteregister</td>
+<td style="text-align:left">0100 000B 1000 0000 : 11 011 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0001 : 11 011 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0011 : 11 011 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0100 000B 0001 110w : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to RAL</td>
+<td style="text-align:left">0100 1000 0001 1101 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">0100 00XB 1000 00sw : mod 011 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory8</td>
+<td style="text-align:left">0100 00XB 1000 0000 : mod 011 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64</td>
+<td style="text-align:left">0100 10XB 1000 0001 : mod 011 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory64</td>
+<td style="text-align:left">0100 10XB 1000 0011 : mod 011 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SCAS/SCASB/SCASW/SCASD – Scan String</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">scan string</td>
+<td style="text-align:left">1010 111w</td>
+</tr>
+<tr>
+<td style="text-align:left">scan string (compare AL with byte at RDI)</td>
+<td style="text-align:left">0100 1000 1010 1110</td>
+</tr>
+<tr>
+<td style="text-align:left">scan string (compare RAX with qword at RDI)</td>
+<td style="text-align:left">0100 1000 1010 1111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SETcc – Byte Set on Condition</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1001 tttn : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 0000 0000 1111 : 1001 tttn : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1001 tttn : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 0000 0000 1111 : 1001 tttn : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SGDT – Store Global Descriptor Table Register</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : modA 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHL – Shift Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B 1101 000w : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by 1</td>
+<td style="text-align:left">0100 000B 1101 0000 : 11 100 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 100 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB 1101 000w : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by 1</td>
+<td style="text-align:left">0100 00XB 1101 0000 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B 1101 001w : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by CL</td>
+<td style="text-align:left">0100 000B 1101 0010 : 11 100 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 100B 1101 0011 : 11 100 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB 1101 001w : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by CL</td>
+<td style="text-align:left">0100 00XB 1101 0010 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 000B 1100 000w : 11 100 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by immediate count</td>
+<td style="text-align:left">0100 000B 1100 0000 : 11 100 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">quadregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 100 quadreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 000w : mod 100 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 0000 : mod 100 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 100 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHLD – Double Precision Shift Left</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1010 0100 : 11 reg2 reg1 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate8</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 0100 : 11 qworddreg2 qwordreg1 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1010 0100 : mod reg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate8</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 0100 : mod qwordreg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1010 0101 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">quadregister by CL</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 0101 : 11 quadreg2 quadreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1010 0101 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 0101 : mod quadreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHR – Shift Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by 1</td>
+<td style="text-align:left">0100 000B 1101 000w : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by 1</td>
+<td style="text-align:left">0100 000B 1101 0000 : 11 101 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by 1</td>
+<td style="text-align:left">0100 100B 1101 0001 : 11 101 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by 1</td>
+<td style="text-align:left">0100 00XB 1101 000w : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by 1</td>
+<td style="text-align:left">0100 00XB 1101 0000 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by 1</td>
+<td style="text-align:left">0100 10XB 1101 0001 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B 1101 001w : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by CL</td>
+<td style="text-align:left">0100 000B 1101 0010 : 11 101 bytereg</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 100B 1101 0011 : 11 101 qwordreg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0100 00XB 1101 001w : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by CL</td>
+<td style="text-align:left">0100 00XB 1101 0010 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 10XB 1101 0011 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 000B 1100 000w : 11 101 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister by immediate count</td>
+<td style="text-align:left">0100 000B 1100 0000 : 11 101 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate count</td>
+<td style="text-align:left">0100 100B 1100 0001 : 11 101 reg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 000w : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 by immediate count</td>
+<td style="text-align:left">0100 00XB 1100 0000 : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate count</td>
+<td style="text-align:left">0100 10XB 1100 0001 : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SHRD – Double Precision Shift Right</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register by immediate count</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1010 1100 : 11 reg2 reg1 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by immediate8</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 1100 : 11 qwordreg2 qwordreg1 : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by immediate count</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 1010 1100 : mod reg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by immediate8</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 1100 : mod qwordreg r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">register by CL</td>
+<td style="text-align:left">0100 000B 0000 1111 : 1010 1101 : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister by CL</td>
+<td style="text-align:left">0100 1R0B 0000 1111 : 1010 1101 : 11 qwordreg2 qwordreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory by CL</td>
+<td style="text-align:left">0000 1111 : 1010 1101 : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 by CL</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1010 1101 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SIDT – Store Interrupt Descriptor Table Register</strong></td>
+<td style="text-align:left">0000 1111 : 0000 0001 : modA 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SLDT – Store Local Descriptor Table Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">to register</td>
+<td style="text-align:left">0100 000B 0000 1111 : 0000 0000 : 11 000 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">to memory</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 0000 0000 : mod 000 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SMSW – Store Machine Status Word</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">to register</td>
+<td style="text-align:left">0100 000B 0000 1111 : 0000 0001 : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">to memory</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 0000 0001 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STC – Set Carry Flag</strong></td>
+<td style="text-align:left">1111 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STD – Set Direction Flag</strong></td>
+<td style="text-align:left">1111 1101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STI – Set Interrupt Flag</strong></td>
+<td style="text-align:left">1111 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STOS/STOSB/STOSW/STOSD/STOSQ – Store String Data</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">store string data</td>
+<td style="text-align:left">1010 101w</td>
+</tr>
+<tr>
+<td style="text-align:left">store string data (RAX at address RDI)</td>
+<td style="text-align:left">0100 1000 1010 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>STR – Store Task Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">to register</td>
+<td style="text-align:left">0100 000B 0000 1111 : 0000 0000 : 11 001 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">to memory</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 0000 0000 : mod 001 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SUB – Integer Subtraction</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 from register2</td>
+<td style="text-align:left">0100 0R0B 0010 100w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1 from byteregister2</td>
+<td style="text-align:left">0100 0R0B 0010 1000 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 from qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0010 1000 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 from register1</td>
+<td style="text-align:left">0100 0R0B 0010 101w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister2 from byteregister1</td>
+<td style="text-align:left">0100 0R0B 0010 1010 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister2 from qwordregister1</td>
+<td style="text-align:left">0100 1R0B 0010 1011 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory from register</td>
+<td style="text-align:left">0100 00XB 0010 101w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 from byteregister</td>
+<td style="text-align:left">0100 0RXB 0010 1010 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 from qwordregister</td>
+<td style="text-align:left">0100 1RXB 0010 1011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register from memory</td>
+<td style="text-align:left">0100 0RXB 0010 100w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister from memory8</td>
+<td style="text-align:left">0100 0RXB 0010 1000 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister from memory8</td>
+<td style="text-align:left">0100 1RXB 0010 1000 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate from register</td>
+<td style="text-align:left">0100 000B 1000 00sw : 11 101 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 from byteregister</td>
+<td style="text-align:left">0100 000B 1000 0000 : 11 101 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 from qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0001 : 11 101 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 from qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0011 : 11 101 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate from AL, AX, or EAX</td>
+<td style="text-align:left">0100 000B 0010 110w : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 from RAX</td>
+<td style="text-align:left">0100 1000 0010 1101 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate from memory</td>
+<td style="text-align:left">0100 00XB 1000 00sw : mod 101 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 from memory8</td>
+<td style="text-align:left">0100 00XB 1000 0000 : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 from memory64</td>
+<td style="text-align:left">0100 10XB 1000 0001 : mod 101 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 from memory64</td>
+<td style="text-align:left">0100 10XB 1000 0011 : mod 101 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SWAPGS – Swap GS Base Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">Exchanges the current GS base register value for value in MSR C0000102H</td>
+<td style="text-align:left">0000 1111 0000 0001 1111 1000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SYSCALL – Fast System Call</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">fast call to privilege level 0 system procedures</td>
+<td style="text-align:left">0000 1111 0000 0101</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>SYSRET – Return From Fast System Call</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">return from fast system call</td>
+<td style="text-align:left">0000 1111 0000 0111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>TEST – Logical Compare</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 and register2</td>
+<td style="text-align:left">0100 0R0B 1000 010w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1 and byteregister2</td>
+<td style="text-align:left">0100 0R0B 1000 0100 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 and qwordregister2</td>
+<td style="text-align:left">0100 1R0B 1000 0101 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory and register</td>
+<td style="text-align:left">0100 0R0B 1000 010w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 and byteregister</td>
+<td style="text-align:left">0100 0RXB 1000 0100 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 and qwordregister</td>
+<td style="text-align:left">0100 1RXB 1000 0101 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate and register</td>
+<td style="text-align:left">0100 000B 1111 011w : 11 000 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 and byteregister</td>
+<td style="text-align:left">0100 000B 1111 0110 : 11 000 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 and qwordregister</td>
+<td style="text-align:left">0100 100B 1111 0111 : 11 000 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate and AL, AX, or EAX</td>
+<td style="text-align:left">0100 000B 1010 100w : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 and RAX</td>
+<td style="text-align:left">0100 1000 1010 1001 : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate and memory</td>
+<td style="text-align:left">0100 00XB 1111 011w : mod 000 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 and memory8</td>
+<td style="text-align:left">0100 1000 1111 0110 : mod 000 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 and memory64</td>
+<td style="text-align:left">0100 1000 1111 0111 : mod 000 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>UD2 – Undefined instruction</strong></td>
+<td style="text-align:left">0000 FFFF : 0000 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>VERR – Verify a Segment for Reading</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 000B 0000 1111 : 0000 0000 : 11 100 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 0000 0000 : mod 100 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>VERW – Verify a Segment for Writing</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register</td>
+<td style="text-align:left">0100 000B 0000 1111 : 0000 0000 : 11 101 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory</td>
+<td style="text-align:left">0100 00XB 0000 1111 : 0000 0000 : mod 101 r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>WAIT – Wait</strong></td>
+<td style="text-align:left">1001 1011</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>WBINVD – Writeback and Invalidate Data Cach</strong>e</td>
+<td style="text-align:left">0000 1111 : 0000 1001</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>WRMSR – Write to Model-Specific Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">write EDX:EAX to ECX specified MSR</td>
+<td style="text-align:left">0000 1111 : 0011 0000</td>
+</tr>
+<tr>
+<td style="text-align:left">write RDX[31:0]:RAX[31:0] to RCX specified MSR</td>
+<td style="text-align:left">0100 1000 0000 1111 : 0011 0000</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XADD – Exchange and Add</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1, register2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1100 000w : 11 reg2 reg1</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1, byteregister2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1100 0000 : 11 bytereg2 bytereg1</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1, qwordregister2</td>
+<td style="text-align:left">0100 0R0B 0000 1111 : 1100 0001 : 11 qwordreg2 qwordreg1</td>
+</tr>
+<tr>
+<td style="text-align:left">memory, register</td>
+<td style="text-align:left">0100 0RXB 0000 1111 : 1100 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8, bytereg</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1100 0000 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64, qwordreg</td>
+<td style="text-align:left">0100 1RXB 0000 1111 : 1100 0001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XCHG – Exchange Register/Memory with Register</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 with register2</td>
+<td style="text-align:left">1000 011w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">AX or EAX with register</td>
+<td style="text-align:left">1001 0 reg</td>
+</tr>
+<tr>
+<td style="text-align:left">memory with register</td>
+<td style="text-align:left">1000 011w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XLAT/XLATB – Table Look-up Translation</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">AL to byte DS:[(E)BX + unsigned AL]</td>
+<td style="text-align:left">1101 0111</td>
+</tr>
+<tr>
+<td style="text-align:left">AL to byte DS:[RBX + unsigned AL]</td>
+<td style="text-align:left">0100 1000 1101 0111</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>XOR – Logical Exclusive OR</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">register1 to register2</td>
+<td style="text-align:left">0100 0RXB 0011 000w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister1 to byteregister2</td>
+<td style="text-align:left">0100 0R0B 0011 0000 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister1 to qwordregister2</td>
+<td style="text-align:left">0100 1R0B 0011 0001 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">register2 to register1</td>
+<td style="text-align:left">0100 0R0B 0011 001w : 11 reg1 reg2</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister2 to byteregister1</td>
+<td style="text-align:left">0100 0R0B 0011 0010 : 11 bytereg1 bytereg2</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister2 to qwordregister1</td>
+<td style="text-align:left">0100 1R0B 0011 0011 : 11 qwordreg1 qwordreg2</td>
+</tr>
+<tr>
+<td style="text-align:left">memory to register</td>
+<td style="text-align:left">0100 0RXB 0011 001w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory8 to byteregister</td>
+<td style="text-align:left">0100 0RXB 0011 0010 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">memory64 to qwordregister</td>
+<td style="text-align:left">0100 1RXB 0011 0011 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">register to memory</td>
+<td style="text-align:left">0100 0RXB 0011 000w : mod reg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">byteregister to memory8</td>
+<td style="text-align:left">0100 0RXB 0011 0000 : mod bytereg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">qwordregister to memory8</td>
+<td style="text-align:left">0100 1RXB 0011 0001 : mod qwordreg r/m</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to register</td>
+<td style="text-align:left">0100 000B 1000 00sw : 11 110 reg : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to byteregister</td>
+<td style="text-align:left">0100 000B 1000 0000 : 11 110 bytereg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0001 : 11 110 qwordreg : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to qwordregister</td>
+<td style="text-align:left">0100 100B 1000 0011 : 11 110 qwordreg : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to AL, AX, or EAX</td>
+<td style="text-align:left">0100 000B 0011 010w : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to RAX</td>
+<td style="text-align:left">0100 1000 0011 0101 : immediate data</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate to memory</td>
+<td style="text-align:left">0100 00XB 1000 00sw : mod 110 r/m : imm</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory8</td>
+<td style="text-align:left">0100 00XB 1000 0000 : mod 110 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate32 to memory64</td>
+<td style="text-align:left">0100 10XB 1000 0001 : mod 110 r/m : imm32</td>
+</tr>
+<tr>
+<td style="text-align:left">immediate8 to memory64</td>
+<td style="text-align:left">0100 10XB 1000 0011 : mod 110 r/m : imm8</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Prefix Bytes</strong></td>
+<td style="text-align:left">--------------------------------------------------</td>
+</tr>
+<tr>
+<td style="text-align:left">address size</td>
+<td style="text-align:left">0110 0111</td>
+</tr>
+<tr>
+<td style="text-align:left">LOCK</td>
+<td style="text-align:left">1111 0000</td>
+</tr>
+<tr>
+<td style="text-align:left">operand size</td>
+<td style="text-align:left">0110 0110</td>
+</tr>
+<tr>
+<td style="text-align:left">CS segment override</td>
+<td style="text-align:left">0010 1110</td>
+</tr>
+<tr>
+<td style="text-align:left">DS segment override</td>
+<td style="text-align:left">0011 1110</td>
+</tr>
+<tr>
+<td style="text-align:left">ES segment override</td>
+<td style="text-align:left">0010 0110</td>
+</tr>
+<tr>
+<td style="text-align:left">FS segment override</td>
+<td style="text-align:left">0110 0100</td>
+</tr>
+<tr>
+<td style="text-align:left">GS segment override</td>
+<td style="text-align:left">0110 0101</td>
+</tr>
+<tr>
+<td style="text-align:left">SS segment override</td>
+<td style="text-align:left">0011 0110</td>
+</tr>
+</tbody>
+</table>
+<h2 id="warning-not-fbi">Warning (Not FBI)</h2>
+<ul>
+<li>This summary is for reference only and does not guarantee complete accuracy.</li>
+</ul>
+
+        
+        
+    </body>
+    </html>
