@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>7-Bit Coded Character Set Encoding</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="7-bit-coded-character-set-encoding">7-Bit Coded Character Set Encoding</h1>
+<h2 id="preface">Preface</h2>
+<ul>
+<li>Date: 14/11/2023</li>
+<li>References:
+<ul>
+<li><a href="https://www.iso.org/standard/4777.html">ISO/IEC 646:1991: ISO 7-Bit Coded Character Set for Information Interchange</a></li>
+<li><a href="https://www.iso.org/standard/12782.html">ISO/IEC 6429:1992: Control functions for coded character sets</a></li>
+<li><a href="https://ecma-international.org/publications-and-standards/standards/ecma-6/">Standard ECMA-6: 7-Bit Coded Character Set 6th Edition</a></li>
+<li><a href="https://ecma-international.org/publications-and-standards/standards/ecma-48/">Standard ECMA-48: Control Functions for Coded Character Sets</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="specification">Specification</h2>
+<h3 id="structure">Structure</h3>
+<p>The coded character set of the standard shall have the following structure.</p>
+<ul>
+<li>a <strong>C0</strong> control character set of up to <strong>32</strong> control characters;</li>
+<li>the graphic character SPACE (<strong>SP</strong>);</li>
+<li>a <strong>G0</strong> graphic character set of up to <strong>94</strong> graphic characters;</li>
+<li>the character DELETE (<strong>DEL</strong>).</li>
+</ul>
+<h3 id="control-characters">Control Characters</h3>
+<p>The C0 set of a version of Standard ECMA-6 shall be a sub-set of the C0 set of Standard ECMA-48. The selected control functions shall be used according to their definitions in Standard ECMA-48. Bit combinations corresponding to control functions not selected shall be declared unused.</p>
+<p>If the C0 set of the International Reference Version (IRV) is used, it shall be the C0 set of Standard ECMA-48.</p>
+<p>Table below shows, for convenience, the C0 set of ISO 6429. For the definition of these control functions see Standard ECMA-48.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Symbol</th>
+<th style="text-align:center">Coded Representation</th>
+<th style="text-align:center">Hex Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">NUL</td>
+<td style="text-align:center">0/0</td>
+<td style="text-align:center">0x00</td>
+</tr>
+<tr>
+<td style="text-align:center">SOH</td>
+<td style="text-align:center">0/1</td>
+<td style="text-align:center">0x01</td>
+</tr>
+<tr>
+<td style="text-align:center">STX</td>
+<td style="text-align:center">0/2</td>
+<td style="text-align:center">0x02</td>
+</tr>
+<tr>
+<td style="text-align:center">ETX</td>
+<td style="text-align:center">0/3</td>
+<td style="text-align:center">0x03</td>
+</tr>
+<tr>
+<td style="text-align:center">EOT</td>
+<td style="text-align:center">0/4</td>
+<td style="text-align:center">0x04</td>
+</tr>
+<tr>
+<td style="text-align:center">ENQ</td>
+<td style="text-align:center">0/5</td>
+<td style="text-align:center">0x05</td>
+</tr>
+<tr>
+<td style="text-align:center">ACK</td>
+<td style="text-align:center">0/6</td>
+<td style="text-align:center">0x06</td>
+</tr>
+<tr>
+<td style="text-align:center">BEL</td>
+<td style="text-align:center">0/7</td>
+<td style="text-align:center">0x07</td>
+</tr>
+<tr>
+<td style="text-align:center">BS</td>
+<td style="text-align:center">0/8</td>
+<td style="text-align:center">0x08</td>
+</tr>
+<tr>
+<td style="text-align:center">HT</td>
+<td style="text-align:center">0/9</td>
+<td style="text-align:center">0x09</td>
+</tr>
+<tr>
+<td style="text-align:center">LF</td>
+<td style="text-align:center">0/10</td>
+<td style="text-align:center">0x0A</td>
+</tr>
+<tr>
+<td style="text-align:center">VT</td>
+<td style="text-align:center">0/11</td>
+<td style="text-align:center">0x0B</td>
+</tr>
+<tr>
+<td style="text-align:center">FF</td>
+<td style="text-align:center">0/12</td>
+<td style="text-align:center">0x0C</td>
+</tr>
+<tr>
+<td style="text-align:center">CR</td>
+<td style="text-align:center">0/13</td>
+<td style="text-align:center">0x0D</td>
+</tr>
+<tr>
+<td style="text-align:center">SO</td>
+<td style="text-align:center">0/14</td>
+<td style="text-align:center">0x0E</td>
+</tr>
+<tr>
+<td style="text-align:center">SI</td>
+<td style="text-align:center">0/15</td>
+<td style="text-align:center">0x0F</td>
+</tr>
+<tr>
+<td style="text-align:center">DLE</td>
+<td style="text-align:center">1/0</td>
+<td style="text-align:center">0x10</td>
+</tr>
+<tr>
+<td style="text-align:center">DC1</td>
+<td style="text-align:center">1/1</td>
+<td style="text-align:center">0x11</td>
+</tr>
+<tr>
+<td style="text-align:center">DC2</td>
+<td style="text-align:center">1/2</td>
+<td style="text-align:center">0x12</td>
+</tr>
+<tr>
+<td style="text-align:center">DC3</td>
+<td style="text-align:center">1/3</td>
+<td style="text-align:center">0x13</td>
+</tr>
+<tr>
+<td style="text-align:center">DC4</td>
+<td style="text-align:center">1/4</td>
+<td style="text-align:center">0x14</td>
+</tr>
+<tr>
+<td style="text-align:center">NAK</td>
+<td style="text-align:center">1/5</td>
+<td style="text-align:center">0x15</td>
+</tr>
+<tr>
+<td style="text-align:center">SYN</td>
+<td style="text-align:center">1/6</td>
+<td style="text-align:center">0x16</td>
+</tr>
+<tr>
+<td style="text-align:center">ETB</td>
+<td style="text-align:center">1/7</td>
+<td style="text-align:center">0x17</td>
+</tr>
+<tr>
+<td style="text-align:center">CAN</td>
+<td style="text-align:center">1/8</td>
+<td style="text-align:center">0x18</td>
+</tr>
+<tr>
+<td style="text-align:center">EM</td>
+<td style="text-align:center">1/9</td>
+<td style="text-align:center">0x19</td>
+</tr>
+<tr>
+<td style="text-align:center">SUB</td>
+<td style="text-align:center">1/10</td>
+<td style="text-align:center">0x1A</td>
+</tr>
+<tr>
+<td style="text-align:center">ESC</td>
+<td style="text-align:center">1/11</td>
+<td style="text-align:center">0x1B</td>
+</tr>
+<tr>
+<td style="text-align:center">IS4</td>
+<td style="text-align:center">1/12</td>
+<td style="text-align:center">0x1C</td>
+</tr>
+<tr>
+<td style="text-align:center">IS3</td>
+<td style="text-align:center">1/13</td>
+<td style="text-align:center">0x1D</td>
+</tr>
+<tr>
+<td style="text-align:center">IS2</td>
+<td style="text-align:center">1/14</td>
+<td style="text-align:center">0x1E</td>
+</tr>
+<tr>
+<td style="text-align:center">IS1</td>
+<td style="text-align:center">1/15</td>
+<td style="text-align:center">0x1F</td>
+</tr>
+</tbody>
+</table>
+<h3 id="character-space">Character <strong>SPACE</strong></h3>
+<p>The acronym of the character SPACE is SP and it is represented by bit combination <strong>2/0</strong> (0x20).
+This character is a graphic character, it has a visual representation consisting of the absence of a graphic symbol.</p>
+<h3 id="graphics-characters">Graphics Characters</h3>
+<p>All graphic characters shall be <strong>spacing characters</strong>, that is, they cause the active position to advance by one character position.</p>
+<h4 id="unique-graphic-character-allocations">Unique Graphic Character Allocations</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Graphic Symbol</th>
+<th style="text-align:left">Name</th>
+<th style="text-align:center">Coded Representation</th>
+<th style="text-align:center">Hex Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">!</td>
+<td style="text-align:left">EXCLAMATION MARK</td>
+<td style="text-align:center">2/1</td>
+<td style="text-align:center">0x21</td>
+</tr>
+<tr>
+<td style="text-align:center">&quot;</td>
+<td style="text-align:left">QUOTATION MARK</td>
+<td style="text-align:center">2/2</td>
+<td style="text-align:center">0x22</td>
+</tr>
+<tr>
+<td style="text-align:center">%</td>
+<td style="text-align:left">PERCENT SIGN</td>
+<td style="text-align:center">2/5</td>
+<td style="text-align:center">0x25</td>
+</tr>
+<tr>
+<td style="text-align:center">&amp;</td>
+<td style="text-align:left">AMPERSAND</td>
+<td style="text-align:center">2/6</td>
+<td style="text-align:center">0x26</td>
+</tr>
+<tr>
+<td style="text-align:center">'</td>
+<td style="text-align:left">APOSTROPHE</td>
+<td style="text-align:center">2/7</td>
+<td style="text-align:center">0x27</td>
+</tr>
+<tr>
+<td style="text-align:center">(</td>
+<td style="text-align:left">LEFT PARENTHESIS</td>
+<td style="text-align:center">2/8</td>
+<td style="text-align:center">0x28</td>
+</tr>
+<tr>
+<td style="text-align:center">)</td>
+<td style="text-align:left">RIGHT PARENTHESIS</td>
+<td style="text-align:center">2/9</td>
+<td style="text-align:center">0x29</td>
+</tr>
+<tr>
+<td style="text-align:center">*</td>
+<td style="text-align:left">ASTERISK</td>
+<td style="text-align:center">2/10</td>
+<td style="text-align:center">0x2A</td>
+</tr>
+<tr>
+<td style="text-align:center">+</td>
+<td style="text-align:left">PLUS SIGN</td>
+<td style="text-align:center">2/11</td>
+<td style="text-align:center">0x2B</td>
+</tr>
+<tr>
+<td style="text-align:center">,</td>
+<td style="text-align:left">COMMA</td>
+<td style="text-align:center">2/12</td>
+<td style="text-align:center">0x2C</td>
+</tr>
+<tr>
+<td style="text-align:center">-</td>
+<td style="text-align:left">HYPHEN-MINUS</td>
+<td style="text-align:center">2/13</td>
+<td style="text-align:center">0x2D</td>
+</tr>
+<tr>
+<td style="text-align:center">.</td>
+<td style="text-align:left">FULL STOP</td>
+<td style="text-align:center">2/14</td>
+<td style="text-align:center">0x2E</td>
+</tr>
+<tr>
+<td style="text-align:center">/</td>
+<td style="text-align:left">SOLIDUS</td>
+<td style="text-align:center">2/15</td>
+<td style="text-align:center">0x2F</td>
+</tr>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:left">DIGIT ZERO</td>
+<td style="text-align:center">3/0</td>
+<td style="text-align:center">0x30</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:left">DIGIT ONE</td>
+<td style="text-align:center">3/1</td>
+<td style="text-align:center">0x31</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:left">DIGIT TWO</td>
+<td style="text-align:center">3/2</td>
+<td style="text-align:center">0x32</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:left">DIGIT THREE</td>
+<td style="text-align:center">3/3</td>
+<td style="text-align:center">0x33</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:left">DIGIT FOUR</td>
+<td style="text-align:center">3/4</td>
+<td style="text-align:center">0x34</td>
+</tr>
+<tr>
+<td style="text-align:center">5</td>
+<td style="text-align:left">DIGIT FIVE</td>
+<td style="text-align:center">3/5</td>
+<td style="text-align:center">0x35</td>
+</tr>
+<tr>
+<td style="text-align:center">6</td>
+<td style="text-align:left">DIGIT SIX</td>
+<td style="text-align:center">3/6</td>
+<td style="text-align:center">0x36</td>
+</tr>
+<tr>
+<td style="text-align:center">7</td>
+<td style="text-align:left">DIGIT SEVEN</td>
+<td style="text-align:center">3/7</td>
+<td style="text-align:center">0x37</td>
+</tr>
+<tr>
+<td style="text-align:center">8</td>
+<td style="text-align:left">DIGIT EIGHT</td>
+<td style="text-align:center">3/8</td>
+<td style="text-align:center">0x38</td>
+</tr>
+<tr>
+<td style="text-align:center">9</td>
+<td style="text-align:left">DIGIT NINE</td>
+<td style="text-align:center">3/9</td>
+<td style="text-align:center">0x39</td>
+</tr>
+<tr>
+<td style="text-align:center">:</td>
+<td style="text-align:left">COLON</td>
+<td style="text-align:center">3/10</td>
+<td style="text-align:center">0x3A</td>
+</tr>
+<tr>
+<td style="text-align:center">;</td>
+<td style="text-align:left">SEMICOLON</td>
+<td style="text-align:center">3/11</td>
+<td style="text-align:center">0x3B</td>
+</tr>
+<tr>
+<td style="text-align:center">&lt;</td>
+<td style="text-align:left">LESS-THAN SIGN</td>
+<td style="text-align:center">3/12</td>
+<td style="text-align:center">0x3C</td>
+</tr>
+<tr>
+<td style="text-align:center">=</td>
+<td style="text-align:left">EQUALS SIGN</td>
+<td style="text-align:center">3/13</td>
+<td style="text-align:center">0x3D</td>
+</tr>
+<tr>
+<td style="text-align:center">&gt;</td>
+<td style="text-align:left">GREATER-THAN SIGN</td>
+<td style="text-align:center">3/14</td>
+<td style="text-align:center">0x3E</td>
+</tr>
+<tr>
+<td style="text-align:center">?</td>
+<td style="text-align:left">QUESTION MARK</td>
+<td style="text-align:center">3/15</td>
+<td style="text-align:center">0x3F</td>
+</tr>
+<tr>
+<td style="text-align:center">A</td>
+<td style="text-align:left">LATIN CAPITAL LETTER A</td>
+<td style="text-align:center">4/1</td>
+<td style="text-align:center">0x41</td>
+</tr>
+<tr>
+<td style="text-align:center">B</td>
+<td style="text-align:left">LATIN CAPITAL LETTER B</td>
+<td style="text-align:center">4/2</td>
+<td style="text-align:center">0x42</td>
+</tr>
+<tr>
+<td style="text-align:center">C</td>
+<td style="text-align:left">LATIN CAPITAL LETTER C</td>
+<td style="text-align:center">4/3</td>
+<td style="text-align:center">0x43</td>
+</tr>
+<tr>
+<td style="text-align:center">D</td>
+<td style="text-align:left">LATIN CAPITAL LETTER D</td>
+<td style="text-align:center">4/4</td>
+<td style="text-align:center">0x44</td>
+</tr>
+<tr>
+<td style="text-align:center">E</td>
+<td style="text-align:left">LATIN CAPITAL LETTER E</td>
+<td style="text-align:center">4/5</td>
+<td style="text-align:center">0x45</td>
+</tr>
+<tr>
+<td style="text-align:center">F</td>
+<td style="text-align:left">LATIN CAPITAL LETTER F</td>
+<td style="text-align:center">4/6</td>
+<td style="text-align:center">0x46</td>
+</tr>
+<tr>
+<td style="text-align:center">G</td>
+<td style="text-align:left">LATIN CAPITAL LETTER G</td>
+<td style="text-align:center">4/7</td>
+<td style="text-align:center">0x47</td>
+</tr>
+<tr>
+<td style="text-align:center">H</td>
+<td style="text-align:left">LATIN CAPITAL LETTER H</td>
+<td style="text-align:center">4/8</td>
+<td style="text-align:center">0x48</td>
+</tr>
+<tr>
+<td style="text-align:center">I</td>
+<td style="text-align:left">LATIN CAPITAL LETTER I</td>
+<td style="text-align:center">4/9</td>
+<td style="text-align:center">0x49</td>
+</tr>
+<tr>
+<td style="text-align:center">J</td>
+<td style="text-align:left">LATIN CAPITAL LETTER J</td>
+<td style="text-align:center">4/10</td>
+<td style="text-align:center">0x4A</td>
+</tr>
+<tr>
+<td style="text-align:center">K</td>
+<td style="text-align:left">LATIN CAPITAL LETTER K</td>
+<td style="text-align:center">4/11</td>
+<td style="text-align:center">0x4B</td>
+</tr>
+<tr>
+<td style="text-align:center">L</td>
+<td style="text-align:left">LATIN CAPITAL LETTER L</td>
+<td style="text-align:center">4/12</td>
+<td style="text-align:center">0x4C</td>
+</tr>
+<tr>
+<td style="text-align:center">M</td>
+<td style="text-align:left">LATIN CAPITAL LETTER M</td>
+<td style="text-align:center">4/13</td>
+<td style="text-align:center">0x4D</td>
+</tr>
+<tr>
+<td style="text-align:center">N</td>
+<td style="text-align:left">LATIN CAPITAL LETTER N</td>
+<td style="text-align:center">4/14</td>
+<td style="text-align:center">0x4E</td>
+</tr>
+<tr>
+<td style="text-align:center">O</td>
+<td style="text-align:left">LATIN CAPITAL LETTER O</td>
+<td style="text-align:center">4/15</td>
+<td style="text-align:center">0x4F</td>
+</tr>
+<tr>
+<td style="text-align:center">P</td>
+<td style="text-align:left">LATIN CAPITAL LETTER P</td>
+<td style="text-align:center">5/0</td>
+<td style="text-align:center">0x50</td>
+</tr>
+<tr>
+<td style="text-align:center">Q</td>
+<td style="text-align:left">LATIN CAPITAL LETTER Q</td>
+<td style="text-align:center">5/1</td>
+<td style="text-align:center">0x51</td>
+</tr>
+<tr>
+<td style="text-align:center">R</td>
+<td style="text-align:left">LATIN CAPITAL LETTER R</td>
+<td style="text-align:center">5/2</td>
+<td style="text-align:center">0x52</td>
+</tr>
+<tr>
+<td style="text-align:center">S</td>
+<td style="text-align:left">LATIN CAPITAL LETTER S</td>
+<td style="text-align:center">5/3</td>
+<td style="text-align:center">0x53</td>
+</tr>
+<tr>
+<td style="text-align:center">T</td>
+<td style="text-align:left">LATIN CAPITAL LETTER T</td>
+<td style="text-align:center">5/4</td>
+<td style="text-align:center">0x54</td>
+</tr>
+<tr>
+<td style="text-align:center">U</td>
+<td style="text-align:left">LATIN CAPITAL LETTER U</td>
+<td style="text-align:center">5/5</td>
+<td style="text-align:center">0x55</td>
+</tr>
+<tr>
+<td style="text-align:center">V</td>
+<td style="text-align:left">LATIN CAPITAL LETTER V</td>
+<td style="text-align:center">5/6</td>
+<td style="text-align:center">0x56</td>
+</tr>
+<tr>
+<td style="text-align:center">W</td>
+<td style="text-align:left">LATIN CAPITAL LETTER W</td>
+<td style="text-align:center">5/7</td>
+<td style="text-align:center">0x57</td>
+</tr>
+<tr>
+<td style="text-align:center">X</td>
+<td style="text-align:left">LATIN CAPITAL LETTER X</td>
+<td style="text-align:center">5/8</td>
+<td style="text-align:center">0x58</td>
+</tr>
+<tr>
+<td style="text-align:center">Y</td>
+<td style="text-align:left">LATIN CAPITAL LETTER Y</td>
+<td style="text-align:center">5/9</td>
+<td style="text-align:center">0x59</td>
+</tr>
+<tr>
+<td style="text-align:center">Z</td>
+<td style="text-align:left">LATIN CAPITAL LETTER Z</td>
+<td style="text-align:center">5/10</td>
+<td style="text-align:center">0x5A</td>
+</tr>
+<tr>
+<td style="text-align:center">_</td>
+<td style="text-align:left">LOW LINE</td>
+<td style="text-align:center">5/15</td>
+<td style="text-align:center">0x5F</td>
+</tr>
+<tr>
+<td style="text-align:center">a</td>
+<td style="text-align:left">LATIN SMALL LETTER A</td>
+<td style="text-align:center">6/1</td>
+<td style="text-align:center">0x61</td>
+</tr>
+<tr>
+<td style="text-align:center">b</td>
+<td style="text-align:left">LATIN SMALL LETTER B</td>
+<td style="text-align:center">6/2</td>
+<td style="text-align:center">0x62</td>
+</tr>
+<tr>
+<td style="text-align:center">c</td>
+<td style="text-align:left">LATIN SMALL LETTER C</td>
+<td style="text-align:center">6/3</td>
+<td style="text-align:center">0x63</td>
+</tr>
+<tr>
+<td style="text-align:center">d</td>
+<td style="text-align:left">LATIN SMALL LETTER D</td>
+<td style="text-align:center">6/4</td>
+<td style="text-align:center">0x64</td>
+</tr>
+<tr>
+<td style="text-align:center">e</td>
+<td style="text-align:left">LATIN SMALL LETTER E</td>
+<td style="text-align:center">6/5</td>
+<td style="text-align:center">0x65</td>
+</tr>
+<tr>
+<td style="text-align:center">f</td>
+<td style="text-align:left">LATIN SMALL LETTER F</td>
+<td style="text-align:center">6/6</td>
+<td style="text-align:center">0x66</td>
+</tr>
+<tr>
+<td style="text-align:center">g</td>
+<td style="text-align:left">LATIN SMALL LETTER G</td>
+<td style="text-align:center">6/7</td>
+<td style="text-align:center">0x67</td>
+</tr>
+<tr>
+<td style="text-align:center">h</td>
+<td style="text-align:left">LATIN SMALL LETTER H</td>
+<td style="text-align:center">6/8</td>
+<td style="text-align:center">0x68</td>
+</tr>
+<tr>
+<td style="text-align:center">i</td>
+<td style="text-align:left">LATIN SMALL LETTER I</td>
+<td style="text-align:center">6/9</td>
+<td style="text-align:center">0x69</td>
+</tr>
+<tr>
+<td style="text-align:center">j</td>
+<td style="text-align:left">LATIN SMALL LETTER J</td>
+<td style="text-align:center">6/10</td>
+<td style="text-align:center">0x6A</td>
+</tr>
+<tr>
+<td style="text-align:center">k</td>
+<td style="text-align:left">LATIN SMALL LETTER K</td>
+<td style="text-align:center">6/11</td>
+<td style="text-align:center">0x6B</td>
+</tr>
+<tr>
+<td style="text-align:center">l</td>
+<td style="text-align:left">LATIN SMALL LETTER L</td>
+<td style="text-align:center">6/12</td>
+<td style="text-align:center">0x6C</td>
+</tr>
+<tr>
+<td style="text-align:center">m</td>
+<td style="text-align:left">LATIN SMALL LETTER M</td>
+<td style="text-align:center">6/13</td>
+<td style="text-align:center">0x6D</td>
+</tr>
+<tr>
+<td style="text-align:center">n</td>
+<td style="text-align:left">LATIN SMALL LETTER N</td>
+<td style="text-align:center">6/14</td>
+<td style="text-align:center">0x6E</td>
+</tr>
+<tr>
+<td style="text-align:center">o</td>
+<td style="text-align:left">LATIN SMALL LETTER O</td>
+<td style="text-align:center">6/15</td>
+<td style="text-align:center">0x6F</td>
+</tr>
+<tr>
+<td style="text-align:center">p</td>
+<td style="text-align:left">LATIN SMALL LETTER P</td>
+<td style="text-align:center">7/0</td>
+<td style="text-align:center">0x70</td>
+</tr>
+<tr>
+<td style="text-align:center">q</td>
+<td style="text-align:left">LATIN SMALL LETTER Q</td>
+<td style="text-align:center">7/1</td>
+<td style="text-align:center">0x71</td>
+</tr>
+<tr>
+<td style="text-align:center">r</td>
+<td style="text-align:left">LATIN SMALL LETTER R</td>
+<td style="text-align:center">7/2</td>
+<td style="text-align:center">0x72</td>
+</tr>
+<tr>
+<td style="text-align:center">s</td>
+<td style="text-align:left">LATIN SMALL LETTER S</td>
+<td style="text-align:center">7/3</td>
+<td style="text-align:center">0x73</td>
+</tr>
+<tr>
+<td style="text-align:center">t</td>
+<td style="text-align:left">LATIN SMALL LETTER T</td>
+<td style="text-align:center">7/4</td>
+<td style="text-align:center">0x74</td>
+</tr>
+<tr>
+<td style="text-align:center">u</td>
+<td style="text-align:left">LATIN SMALL LETTER U</td>
+<td style="text-align:center">7/5</td>
+<td style="text-align:center">0x75</td>
+</tr>
+<tr>
+<td style="text-align:center">v</td>
+<td style="text-align:left">LATIN SMALL LETTER V</td>
+<td style="text-align:center">7/6</td>
+<td style="text-align:center">0x76</td>
+</tr>
+<tr>
+<td style="text-align:center">w</td>
+<td style="text-align:left">LATIN SMALL LETTER W</td>
+<td style="text-align:center">7/7</td>
+<td style="text-align:center">0x77</td>
+</tr>
+<tr>
+<td style="text-align:center">x</td>
+<td style="text-align:left">LATIN SMALL LETTER X</td>
+<td style="text-align:center">7/8</td>
+<td style="text-align:center">0x78</td>
+</tr>
+<tr>
+<td style="text-align:center">y</td>
+<td style="text-align:left">LATIN SMALL LETTER Y</td>
+<td style="text-align:center">7/9</td>
+<td style="text-align:center">0x79</td>
+</tr>
+<tr>
+<td style="text-align:center">z</td>
+<td style="text-align:left">LATIN SMALL LETTER</td>
+<td style="text-align:center">7/10</td>
+<td style="text-align:center">0x7A</td>
+</tr>
+</tbody>
+</table>
+<h4 id="alternative-graphic-character-allocations">Alternative Graphic Character Allocations</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Graphic Symbol</th>
+<th style="text-align:left">Name</th>
+<th style="text-align:center">Coded Representation</th>
+<th style="text-align:center">Hex Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">#</td>
+<td style="text-align:left">NUMBER SIGN</td>
+<td style="text-align:center">2/3</td>
+<td style="text-align:center">0x23</td>
+</tr>
+<tr>
+<td style="text-align:center">£</td>
+<td style="text-align:left">POUND SIGN</td>
+<td style="text-align:center">2/3</td>
+<td style="text-align:center">0x23</td>
+</tr>
+<tr>
+<td style="text-align:center">$</td>
+<td style="text-align:left">DOLLAR SIGN</td>
+<td style="text-align:center">2/4</td>
+<td style="text-align:center">0x24</td>
+</tr>
+<tr>
+<td style="text-align:center"> (O~O...?)</td>
+<td style="text-align:left">CURRENCY SIGN</td>
+<td style="text-align:center">2/4</td>
+<td style="text-align:center">0x24</td>
+</tr>
+</tbody>
+</table>
+<p>Unless otherwise agreed between sender and recipient, the graphic symbols £, $ and  do not designate the currency of a specific country.</p>
+<h4 id="national-or-application-oriented-graphic-character-allocations">National or Application-Oriented Graphic Character Allocations</h4>
+<p>No specific graphic character is allocated to the ten bit combinations <strong>4/0, 5/11 to 5/14, 6/0 and 7/11 to 7/14</strong>. These bit combinations are available for national or application-oriented use. Either a unique graphic character shall be allocated to each of these bit combinations, or the bit combination shall be declared unused.</p>
+<h3 id="character-delete">Character DELETE</h3>
+<p>The acronym of the character DELETE is DEL and it is represented by bit combination <strong>7/15</strong> (0x7F). DEL was originally used to erase or obliterate an erroneous or unwanted character in punched tape. DEL may be used for media-fill or time-fill. DEL characters may be inserted into, or removed from, a data stream without affecting the information content of that stream, but such action may affect the information layout and/or the control of equipment.</p>
+<h3 id="composite-graphic-characters">Composite Graphic Characters</h3>
+<p>Whilst all graphic characters specified in this International Standard are spacing characters, it is possible, by using BACKSPACE or CARRIAGE RETURN to image two or more graphic characters at the same character position.</p>
+<p>For example, SOLIDUS and EQUALS SIGN may be combined to image &quot;not equals&quot;. The character LOW LINE, that may be used as a free-standing character, may also be associated with other character(s) to represent the graphic rendition &quot;underlined&quot;.</p>
+<p>Diacritical marks may be allocated to the bit combinations specified in <a href="#national-or-application-oriented-graphic-character-allocations">National or Application-Oriented Graphic Character Allocations</a> and be available for composing accented letters. For such composition a sequence of three characters, the first or last of which is the letter to be accented and the second of which is BACKSPACE may be used. Furthermore, QUOTATION MARK, APOSTROPHE or COMMA can be associated with a letter by means of BACKSPACE for the composition of an accented letter with a diaeresis, an acute accent or a cedilla, respectively.</p>
+<h3 id="international-reference-version-irv">International Reference Version (IRV)</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Graphic Symbol</th>
+<th style="text-align:left">Name</th>
+<th style="text-align:center">Coded Representation</th>
+<th style="text-align:center">Hex Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">#</td>
+<td style="text-align:left">NUMBER SIGN</td>
+<td style="text-align:center">2/3</td>
+<td style="text-align:center">0x23</td>
+</tr>
+<tr>
+<td style="text-align:center">$</td>
+<td style="text-align:left">DOLLAR SIGN</td>
+<td style="text-align:center">2/4</td>
+<td style="text-align:center">0x24</td>
+</tr>
+<tr>
+<td style="text-align:center">@</td>
+<td style="text-align:left">COMMERCIAL AT</td>
+<td style="text-align:center">4/0</td>
+<td style="text-align:center">0x40</td>
+</tr>
+<tr>
+<td style="text-align:center">[</td>
+<td style="text-align:left">LEFT SQUARE BRACKET</td>
+<td style="text-align:center">5/11</td>
+<td style="text-align:center">0x5B</td>
+</tr>
+<tr>
+<td style="text-align:center">\</td>
+<td style="text-align:left">REVERSE SOLIDUS</td>
+<td style="text-align:center">5/12</td>
+<td style="text-align:center">0x5C</td>
+</tr>
+<tr>
+<td style="text-align:center">]</td>
+<td style="text-align:left">RIGHT SQUARE BRACKET</td>
+<td style="text-align:center">5/13</td>
+<td style="text-align:center">0x5D</td>
+</tr>
+<tr>
+<td style="text-align:center">^</td>
+<td style="text-align:left">CIRCUMFLEX ACCENT</td>
+<td style="text-align:center">5/14</td>
+<td style="text-align:center">0x5E</td>
+</tr>
+<tr>
+<td style="text-align:center">`</td>
+<td style="text-align:left">GRAVE ACCENT</td>
+<td style="text-align:center">6/0</td>
+<td style="text-align:center">0x60</td>
+</tr>
+<tr>
+<td style="text-align:center">{</td>
+<td style="text-align:left">LEFT CURLY BRACKET</td>
+<td style="text-align:center">7/11</td>
+<td style="text-align:center">0x7B</td>
+</tr>
+<tr>
+<td style="text-align:center">|</td>
+<td style="text-align:left">VERTICAL LINE</td>
+<td style="text-align:center">7/12</td>
+<td style="text-align:center">0x7C</td>
+</tr>
+<tr>
+<td style="text-align:center">}</td>
+<td style="text-align:left">RIGHT CURLY BRACKET</td>
+<td style="text-align:center">7/13</td>
+<td style="text-align:center">0x7D</td>
+</tr>
+<tr>
+<td style="text-align:center">~</td>
+<td style="text-align:left">TILDE</td>
+<td style="text-align:center">7/14</td>
+<td style="text-align:center">0x7E</td>
+</tr>
+</tbody>
+</table>
+
+        <script async src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </body>
+    </html>
